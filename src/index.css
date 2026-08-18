@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 20% 95%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 20% 95%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 26 82% 52%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 26 82% 52%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 20% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 20% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 6%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 26 82% 52%;
+    --radius: 0.75rem;
+    --gradient-gold: linear-gradient(135deg, hsl(26 82% 52%), hsl(20 85% 45%));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
+    --gradient-hero: linear-gradient(135deg, hsl(222 47% 6%) 0%, hsl(222 47% 12%) 100%);
+    --shadow-gold: 0 4px 24px -4px hsl(26 82% 52% / 0.25);
+    --shadow-card: 0 4px 32px -8px hsl(0 0% 0% / 0.4);
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html, body, #root { @apply min-h-screen min-w-full; }
+  body { @apply bg-background text-foreground font-sans antialiased; font-family: 'Plus Jakarta Sans', sans-serif; }
+}
+
+@layer utilities {
+  .text-gradient-gold { background: var(--gradient-gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .bg-gradient-gold { background: var(--gradient-gold); }
+  .bg-gradient-card { background: var(--gradient-card); }
+  .bg-gradient-hero { background: var(--gradient-hero); }
+  .shadow-gold { box-shadow: var(--shadow-gold); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+}
