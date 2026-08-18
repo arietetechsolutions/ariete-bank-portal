@@ -1,6 +1,135 @@
-Deno.serve(async () => {
-  return new Response(JSON.stringify({ success: false, error: "Not implemented yet" }), {
-    status: 501,
-    headers: { "Content-Type": "application/json" },
-  });
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { authenticateRequest } from "../_shared/auth-handler.ts";
+import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
+
+interface ResetPasswordBody {
+  userId: string;
+}
+
+const getSupabaseUrl = () => Deno.env.get('SUPABASE_URL')!;
+const getServiceRoleKey = () => Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const adminHeaders = () => ({
+  'Authorization': `Bearer ${getServiceRoleKey()}`,
+  'apikey': getServiceRoleKey(),
+  'Content-Type': 'application/json',
+});
+
+serve(async (req) => {
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  try {
+    const auth = await authenticateRequest(req, { requireAdmin: true });
+    if (!auth.success) return auth.response;
+
+    const { user } = auth.context;
+
+    const rateLimit = await checkRateLimit(`reset-password:${user.id}`, 3, 3600);
+    if (!rateLimit.allowed) {
+      return Errors.rateLimitExceeded();
+    }
+
+    const body = await parseJsonBody<ResetPasswordBody>(req);
+    if (!body.success) return body.response;
+
+    const { userId } = body.data;
+    if (!userId) {
+      return Errors.badRequest('User ID is required');
+    }
+
+    const getUserResponse = await fetch(
+      `${getSupabaseUrl()}/auth/v1/admin/users/${userId}`,
+      { headers: adminHeaders() }
+    );
+
+    if (!getUserResponse.ok) {
+      const errorText = await getUserResponse.text();
+      console.error('Error fetching user:', errorText);
+      return Errors.notFound('User not found');
+    }
+
+    const targetUser = await getUserResponse.json();
+    const targetEmail = targetUser.email;
+    if (!targetEmail) {
+      return Errors.badRequest('User does not have an email address');
+    }
+
+    const siteUrl = Deno.env.get('SITE_URL');
+    if (!siteUrl) {
+      console.error('SITE_URL environment variable is not set');
+      return Errors.serverError('Server configuration error');
+    }
+
+    const generateLinkResponse = await fetch(
+      `${getSupabaseUrl()}/auth/v1/admin/generate_link`,
+      {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          type: 'recovery',
+          email: targetEmail,
+          options: {
+            redirect_to: `${siteUrl}/set-password`,
+          },
+        }),
+      }
+    );
+
+    if (!generateLinkResponse.ok) {
+      const errorText = await generateLinkResponse.text();
+      console.error(`Error generating recovery link (${generateLinkResponse.status}):`, errorText);
+      if (generateLinkResponse.status >= 400 && generateLinkResponse.status < 500) {
+        let detail = 'Password reset failed';
+        try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
+        return Errors.badRequest(detail);
+      }
+      return Errors.serverError('Password reset failed: unexpected server error');
+    }
+
+    const { action_link } = await generateLinkResponse.json();
+
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY not configured');
+      return Errors.configError('Email service not configured');
+    }
+
+    const contactName = targetUser.user_metadata?.contact_name || targetEmail;
+
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Ariete Capital <noreply@arietecapital.com>',
+        to: [targetEmail],
+        template: {
+          id: Deno.env.get('RESEND_TEMPLATE_RESET')!,
+          variables: {
+            agentName: contactName,
+            actionLink: action_link,
+          },
+        },
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      console.error(`Error sending email via Resend (${emailResponse.status}):`, errorText);
+      let detail = 'Failed to send reset password email';
+      try { const parsed = JSON.parse(errorText); detail = parsed.message || detail; } catch { /* ignore parse error */ }
+      return Errors.serverError(detail);
+    }
+
+    return successResponse({
+      message: `Password reset email sent to ${targetEmail}`,
+    });
+  } catch (error) {
+    console.error('Error in reset-password:', error instanceof Error ? error.message : 'Unknown error');
+    return Errors.serverError('An error occurred while resetting password');
+  }
 });
