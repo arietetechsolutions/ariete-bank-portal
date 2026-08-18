@@ -1,0 +1,74 @@
+import { createClient, SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "./cors.ts";
+
+export interface AuthContext {
+  user: User;
+  userEmail: string;
+  supabase: SupabaseClient;
+  isAdmin: boolean;
+  profile?: {
+    bank_id: string | null;
+    contact_name: string | null;
+  };
+}
+
+export interface AuthOptions {
+  requireAdmin?: boolean;
+  requireBankId?: boolean;
+}
+
+export type AuthResult =
+  | { success: true; context: AuthContext }
+  | { success: false; response: Response };
+
+export async function authenticateRequest(req: Request, options: AuthOptions = {}): Promise<AuthResult> {
+  const { requireAdmin = false, requireBankId = false } = options;
+
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Authentication required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
+  }
+
+  const userEmail = user.email || 'unknown';
+
+  const { data: adminRole } = await supabase
+    .from('user_roles').select('id').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+  const isAdmin = !!adminRole;
+
+  if (requireAdmin && !isAdmin) {
+    return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
+  }
+
+  const { data: profileData } = await supabase
+    .from('profiles').select('bank_id, contact_name').eq('id', user.id).single();
+
+  const profile: AuthContext['profile'] = profileData ? {
+    bank_id: profileData.bank_id,
+    contact_name: profileData.contact_name,
+  } : undefined;
+
+  if (requireBankId && !profile?.bank_id && !isAdmin) {
+    return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Your profile does not have a bank assigned. Please contact an administrator.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
+  }
+
+  return { success: true, context: { user, userEmail, supabase, isAdmin, profile } };
+}
+
+export function createAdminClient(): SupabaseClient {
+  return createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
