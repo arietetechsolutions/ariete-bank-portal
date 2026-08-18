@@ -1,0 +1,31 @@
+project_id = "ariete-bank-portal"
+
+[functions.get-bank-accounts]
+verify_jwt = false
+
+[functions.update-bank-account-status]
+verify_jwt = false
+
+[functions.get-banks]
+verify_jwt = false
+
+[functions.get-users]
+verify_jwt = false
+
+[functions.invite-user]
+verify_jwt = false
+
+[functions.bulk-invite]
+verify_jwt = false
+
+[functions.update-user]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.resend-invite]
+verify_jwt = false
+
+[functions.reset-password]
+verify_jwt = false
