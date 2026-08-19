@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors } from "../_shared/response-formatter.ts";
 import { getAirtableConfig, getTableIds, fetchAllRecords } from "../_shared/airtable-fetcher.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -10,6 +11,9 @@ serve(async (req) => {
   try {
     const auth = await authenticateRequest(req);
     if (!auth.success) return auth.response;
+
+    const rateLimit = await checkRateLimit(`get-banks:${auth.context.user.id}`, 60, 60);
+    if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
     const airtableConfig = getAirtableConfig();
     if (!airtableConfig) return Errors.configError();

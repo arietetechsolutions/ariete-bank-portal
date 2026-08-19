@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors } from "../_shared/response-formatter.ts";
 import { getAirtableConfig, getTableIds, fetchAllRecords, buildLookupMap, resolveLookup } from "../_shared/airtable-fetcher.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -11,12 +12,18 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireBankId: true });
     if (!auth.success) return auth.response;
 
-    const { profile, isAdmin } = auth.context;
+    const { user, profile, isAdmin } = auth.context;
     const userBankId = profile?.bank_id;
 
     if (!isAdmin && !userBankId) {
       return Errors.forbidden('Your profile does not have a bank assigned. Please contact an administrator.');
     }
+
+    // Airtable's own rate limit is shared across the whole app (one API
+    // key, 5 req/sec per base) - a single abusive session must not be able
+    // to exhaust it for everyone else.
+    const rateLimit = await checkRateLimit(`get-bank-accounts:${user.id}`, 60, 60);
+    if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
     const airtableConfig = getAirtableConfig();
     if (!airtableConfig) return Errors.configError();
