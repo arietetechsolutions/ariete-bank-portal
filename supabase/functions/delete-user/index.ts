@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -12,6 +13,9 @@ serve(async (req) => {
     if (!auth.success) return auth.response;
 
     const { supabase, user } = auth.context;
+
+    const rateLimit = await checkRateLimit(`delete-user:${user.id}`, 10, 60);
+    if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
     const body = await parseJsonBody<{ userId: string }>(req);
     if (!body.success) return body.response;

@@ -3,6 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { getAirtableConfig, getTableIds, fetchRecord, updateRecord, createRecord } from "../_shared/airtable-fetcher.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const updateSchema = z.object({
   bankAccountId: z.string().min(1, "Bank account ID is required"),
@@ -23,12 +24,15 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireBankId: true });
     if (!auth.success) return auth.response;
 
-    const { userEmail, profile, isAdmin } = auth.context;
+    const { user, userEmail, profile, isAdmin } = auth.context;
     const userBankId = profile?.bank_id || null;
 
     if (!isAdmin && !userBankId) {
       return Errors.forbidden('Your profile does not have a bank assigned.');
     }
+
+    const rateLimit = await checkRateLimit(`update-bank-account-status:${user.id}`, 30, 60);
+    if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
     const body = await parseJsonBody<z.infer<typeof updateSchema>>(req);
     if (!body.success) return body.response;

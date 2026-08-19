@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 interface UpdateUserBody {
   userId: string;
@@ -16,6 +17,9 @@ serve(async (req) => {
   try {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
+
+    const rateLimit = await checkRateLimit(`update-user:${auth.context.user.id}`, 20, 60);
+    if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
     const body = await parseJsonBody<UpdateUserBody>(req);
     if (!body.success) return body.response;

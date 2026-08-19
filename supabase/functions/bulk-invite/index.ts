@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 interface BulkInviteEntry {
   email: string;
@@ -29,6 +30,9 @@ serve(async (req) => {
   try {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
+
+    const rateLimit = await checkRateLimit(`bulk-invite:${auth.context.user.id}`, 5, 60);
+    if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
     const body = await parseJsonBody<BulkInviteBody>(req, 50000);
     if (!body.success) return body.response;
