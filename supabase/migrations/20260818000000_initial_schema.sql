@@ -72,6 +72,9 @@ CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH 
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
+CREATE POLICY "Users can view own roles" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
+
 -- RLS policies restrict which *rows* a role can see, but Postgres also
 -- requires a separate GRANT before a role can touch the table at all.
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;

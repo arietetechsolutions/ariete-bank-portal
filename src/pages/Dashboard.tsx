@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -12,12 +13,23 @@ import {
 import { toast } from 'sonner';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { useUpdateBankAccountStatus } from '@/hooks/useUpdateBankAccountStatus';
+import { useAdmin } from '@/hooks/useAdmin';
 import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { isAdmin, isLoading: isAdminLoading } = useAdmin();
   const { data: bankAccounts, isLoading, error, refetch } = useBankAccounts();
   const { updateStatus, isUpdating } = useUpdateBankAccountStatus();
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; newStatus: BankAccountStatus } | null>(null);
+
+  useEffect(() => {
+    if (!isAdminLoading && isAdmin) navigate('/users');
+  }, [isAdmin, isAdminLoading, navigate]);
+
+  if (isAdminLoading || isAdmin) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
 
   const handleStatusChange = (id: string, newStatus: BankAccountStatus) => {
     setConfirmDialog({ id, newStatus });
