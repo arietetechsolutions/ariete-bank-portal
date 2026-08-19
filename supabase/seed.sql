@@ -2,11 +2,10 @@
 -- stack (via `supabase db reset` / `supabase start`) — never run this
 -- against a real deployment.
 --
---   admin@ariete.test    / TestAdmin123!   (role: admin)
---   teststaff@ariete.test / TestStaff123!  (role: bank_staff)
+--   test-admin@arietecapital.test    / TestAdmin123!  (role: admin)
+--   test-bankstaff@gcpartners.test   / TestStaff123!  (role: bank_staff)
 --
--- The test bank_staff account's bank_id is a placeholder. Swap it for a
--- real Banks record ID from Airtable to see live account data for that bank.
+-- bank_id below is a real GC Partners Banks record ID from Airtable.
 
 create extension if not exists pgcrypto;
 
@@ -22,11 +21,11 @@ begin
     email_change, email_change_token_new
   ) values
     ('00000000-0000-0000-0000-000000000000', admin_id, 'authenticated', 'authenticated',
-     'admin@ariete.test', crypt('TestAdmin123!', gen_salt('bf')),
+     'test-admin@arietecapital.test', crypt('TestAdmin123!', gen_salt('bf')),
      now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Test Admin"}',
      now(), now(), '', '', '', ''),
     ('00000000-0000-0000-0000-000000000000', staff_id, 'authenticated', 'authenticated',
-     'teststaff@ariete.test', crypt('TestStaff123!', gen_salt('bf')),
+     'test-bankstaff@gcpartners.test', crypt('TestStaff123!', gen_salt('bf')),
      now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Test Bank Staff"}',
      now(), now(), '', '', '', '')
   on conflict (id) do nothing;
@@ -35,14 +34,14 @@ begin
     id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at
   ) values
     (gen_random_uuid(), admin_id, admin_id::text,
-     jsonb_build_object('sub', admin_id::text, 'email', 'admin@ariete.test'),
+     jsonb_build_object('sub', admin_id::text, 'email', 'test-admin@arietecapital.test'),
      'email', now(), now(), now()),
     (gen_random_uuid(), staff_id, staff_id::text,
-     jsonb_build_object('sub', staff_id::text, 'email', 'teststaff@ariete.test'),
+     jsonb_build_object('sub', staff_id::text, 'email', 'test-bankstaff@gcpartners.test'),
      'email', now(), now(), now())
   on conflict (provider_id, provider) do nothing;
 
-  update public.profiles set bank_id = 'REPLACE_WITH_REAL_BANK_RECORD_ID' where id = staff_id;
+  update public.profiles set bank_id = 'recJnFxg7L6qTPd6M' where id = staff_id;
 
   insert into public.user_roles (user_id, role) values
     (admin_id, 'admin'),

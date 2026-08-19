@@ -37,10 +37,10 @@ Copy `.env.local` and `supabase/.env.local` from the values printed by `npx supa
 
 | Role | Email | Password |
 |---|---|---|
-| admin | `admin@ariete.test` | `TestAdmin123!` |
-| bank_staff | `teststaff@ariete.test` | `TestStaff123!` |
+| admin | `test-admin@arietecapital.test` | `TestAdmin123!` |
+| bank_staff | `test-bankstaff@gcpartners.test` | `TestStaff123!` |
 
-The bank_staff account's `bank_id` is a placeholder — swap it for a real Banks record ID from Airtable (in `public.profiles`) to see live account data for that bank.
+The bank_staff account's `bank_id` is set to a real GC Partners Banks record ID, so it shows live account data out of the box.
 
 ## Verifying changes
 
