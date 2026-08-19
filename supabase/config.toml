@@ -1,5 +1,9 @@
 project_id = "ariete-bank-portal"
 
+[auth]
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://localhost:8080/set-password", "http://127.0.0.1:8080/set-password"]
+
 [functions.get-bank-accounts]
 verify_jwt = false
 
