@@ -67,7 +67,7 @@ const Auth = () => {
             <img src={arieteLogo} alt="Ariete Capital" className="h-16 w-auto" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-foreground">Ariete Bank Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-foreground">Bank Portal</CardTitle>
             <CardDescription className="text-muted-foreground">Login</CardDescription>
           </div>
         </CardHeader>
