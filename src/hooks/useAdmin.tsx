@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-export const useAdmin = () => {
+interface AdminContextValue { isAdmin: boolean; isLoading: boolean; }
+
+const AdminContext = createContext<AdminContextValue>({ isAdmin: false, isLoading: true });
+
+// Resolved once per session here, instead of every component that needs it
+// re-running its own auth-then-role round trip independently - that was
+// what made the admin-only nav item visibly pop in late on every navigation.
+export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,5 +45,7 @@ export const useAdmin = () => {
     return () => { cancelled = true; };
   }, [user, authLoading]);
 
-  return { isAdmin, isLoading };
+  return <AdminContext.Provider value={{ isAdmin, isLoading }}>{children}</AdminContext.Provider>;
 };
+
+export const useAdmin = () => useContext(AdminContext);

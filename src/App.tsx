@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AuthCallbackHandler from "./components/AuthCallbackHandler";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
+import { AdminProvider } from "./hooks/useAdmin";
 
 const queryClient = new QueryClient();
 
@@ -18,13 +19,15 @@ const App = () => (
       <Toaster richColors position="top-right" />
       <BrowserRouter>
         <AuthCallbackHandler />
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/set-password" element={<SetPassword />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AdminProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AdminProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

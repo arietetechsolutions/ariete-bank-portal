@@ -38,7 +38,7 @@ const UserManagement = () => {
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center gap-4 mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-foreground mb-1">Bank Staff</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-1">User Management</h1>
                 <p className="text-muted-foreground">Invite new users and manage their bank assignments</p>
               </div>
               <div className="flex gap-2">
