@@ -3,11 +3,11 @@ import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/useAdmin';
 
-interface NavItem { icon: React.ElementType; label: string; href: string; adminOnly?: boolean; }
+interface NavItem { icon: React.ElementType; label: string; href: string; visible: (isAdmin: boolean) => boolean; }
 
 const navItems: NavItem[] = [
-  { icon: Landmark, label: 'Accounts', href: '/' },
-  { icon: Users, label: 'Bank Staff', href: '/users', adminOnly: true },
+  { icon: Landmark, label: 'Accounts', href: '/', visible: (isAdmin) => !isAdmin },
+  { icon: Users, label: 'Bank Staff', href: '/users', visible: (isAdmin) => isAdmin },
 ];
 
 const Sidebar = () => {
@@ -19,7 +19,7 @@ const Sidebar = () => {
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
           {navItems.map((item) => {
-            if (item.adminOnly && !isAdmin) return null;
+            if (!item.visible(isAdmin)) return null;
             const isActive = location.pathname === item.href;
             return (
               <li key={item.label}>
