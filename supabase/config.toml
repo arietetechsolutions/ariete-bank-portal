@@ -3,6 +3,13 @@ project_id = "ariete-bank-portal"
 [auth]
 site_url = "http://localhost:8080"
 additional_redirect_urls = ["http://localhost:8080/set-password", "http://127.0.0.1:8080/set-password"]
+# Access tokens are stateless JWTs with no server-side revocation list, so
+# signOut() only revokes the refresh token - a copied/exfiltrated access
+# token keeps working against every edge function until it expires on its
+# own. Shortened from Supabase's 3600s default to bound that exposure
+# window; supabase-js refreshes silently in the background so this has no
+# user-visible effect on session length.
+jwt_expiry = 900
 
 [functions.get-bank-accounts]
 verify_jwt = false
@@ -11,6 +18,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.get-banks]
+verify_jwt = false
+
+[functions.get-my-bank]
 verify_jwt = false
 
 [functions.get-users]

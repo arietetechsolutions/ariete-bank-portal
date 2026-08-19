@@ -32,6 +32,15 @@ serve(async (req) => {
     if (!tableIds.bankAccounts) return Errors.configError('Bank Accounts table not configured');
     if (!tableIds.banks) return Errors.configError('Banks table not configured');
 
+    // A server-side filterByFormula scoped to userBankId would be a
+    // desirable second layer on top of the JS filter below, but Airtable
+    // formulas can't reference a linked field's record IDs directly -
+    // {Bank} in a formula evaluates to the linked records' primary field
+    // (the bank's display name), not their record ID. Doing this properly
+    // would need a lookup/rollup helper field added to the real Airtable
+    // base to expose the ID as text, which is out of scope here. The JS
+    // filter below is the actual, already-verified (multiple rounds of live
+    // IDOR testing) enforcement point.
     const [accountsResult, banksResult] = await Promise.all([
       fetchAllRecords(airtableConfig, tableIds.bankAccounts),
       fetchAllRecords(airtableConfig, tableIds.banks),

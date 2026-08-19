@@ -9,7 +9,11 @@ serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    const auth = await authenticateRequest(req);
+    // Admin-only: the full cross-bank directory (every partner bank's name
+    // and internal record id) has no business being visible to a bank_staff
+    // user - that's exactly the boundary the rest of this app enforces
+    // elsewhere. Non-admins get their own bank via get-my-bank instead.
+    const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
     const rateLimit = await checkRateLimit(`get-banks:${auth.context.user.id}`, 60, 60);
@@ -22,7 +26,10 @@ serve(async (req) => {
     if (!tableIds.banks) return Errors.configError('Banks table not configured');
 
     const result = await fetchAllRecords(airtableConfig, tableIds.banks);
-    if (!result.success) return Errors.serverError(result.error);
+    if (!result.success) {
+      console.error('Error in get-banks:', result.error);
+      return Errors.serverError('Failed to fetch banks');
+    }
 
     const banks = result.records
       .map(record => ({ id: record.id, name: (record.fields['bank'] as string) || record.id }))

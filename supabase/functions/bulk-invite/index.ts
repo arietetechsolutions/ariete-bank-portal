@@ -95,7 +95,8 @@ serve(async (req) => {
             });
 
           if (updateError) {
-            results.failed.push({ email: trimmedEmail, error: updateError.message });
+            console.error(`Error updating profile for ${trimmedEmail}:`, updateError.message);
+            results.failed.push({ email: trimmedEmail, error: 'Failed to update profile' });
             continue;
           }
 
@@ -111,7 +112,8 @@ serve(async (req) => {
               .insert({ user_id: existingUser.id, role });
 
             if (insertRoleError) {
-              results.failed.push({ email: trimmedEmail, error: insertRoleError.message });
+              console.error(`Error inserting role for ${trimmedEmail}:`, insertRoleError.message);
+              results.failed.push({ email: trimmedEmail, error: 'Failed to assign role' });
               continue;
             }
           }
@@ -132,7 +134,10 @@ serve(async (req) => {
 
           if (!inviteResponse.ok) {
             const errorText = await inviteResponse.text();
-            results.failed.push({ email: trimmedEmail, error: errorText });
+            console.error(`Error inviting ${trimmedEmail}:`, errorText);
+            let detail = 'Failed to send invitation';
+            try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
+            results.failed.push({ email: trimmedEmail, error: detail });
             continue;
           }
 
@@ -155,7 +160,8 @@ serve(async (req) => {
               .insert({ user_id: newUserId, role });
 
             if (insertRoleError) {
-              results.failed.push({ email: trimmedEmail, error: insertRoleError.message });
+              console.error(`Error inserting role for ${trimmedEmail}:`, insertRoleError.message);
+              results.failed.push({ email: trimmedEmail, error: 'Failed to assign role' });
               continue;
             }
           }
