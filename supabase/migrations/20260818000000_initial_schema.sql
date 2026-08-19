@@ -72,6 +72,11 @@ CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH 
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
+-- RLS policies restrict which *rows* a role can see, but Postgres also
+-- requires a separate GRANT before a role can touch the table at all.
+GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
+GRANT SELECT ON public.user_roles TO authenticated;
+
 -- Rate limiting table for Edge Functions (stateless)
 CREATE TABLE IF NOT EXISTS rate_limits (
   key TEXT PRIMARY KEY,
