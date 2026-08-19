@@ -2,7 +2,7 @@
 
 A scoped portal for GC Partners / CBH bank staff to track and update the account-opening status of Golden Visa clients Ariete has referred to them, plus an internal admin screen for managing bank-staff logins. Built as an architectural clone of Ariete's Agent Portal (Vite + React + Supabase), with Airtable as the business-data source.
 
-See `CLAUDE.md` for architecture, environment variables, and the production-deployment checklist. See `docs/superpowers/specs/` and `docs/superpowers/plans/` for the original design spec and implementation plan this was built from.
+Not yet deployed — production URL/hosting is still to be decided. Everything below runs the app locally on your own machine.
 
 ## Stack
 
@@ -25,10 +25,22 @@ npx supabase functions serve --env-file supabase/.env.local
 npm run dev
 ```
 
-- App: http://localhost:8080
-- Supabase Studio (view/edit local DB, create test users): http://127.0.0.1:54323
+Once running, the app is served locally at:
+- App (local only, not a hosted URL): http://localhost:8080
+- Supabase Studio (view/edit local DB, create/manage users): http://127.0.0.1:54323
 
-Copy `.env.local` and `supabase/.env.local` from the values printed by `npx supabase start`, plus real Airtable/Resend credentials (see `CLAUDE.md` for the full list of required variables). Neither file is committed — both are gitignored.
+Copy `.env.local` and `supabase/.env.local` from the values printed by `npx supabase start`, plus real Airtable/Resend credentials. Neither file is committed — both are gitignored.
+
+## Test accounts
+
+`supabase db reset` (or a fresh `supabase start`) seeds two local accounts:
+
+| Role | Email | Password |
+|---|---|---|
+| admin | `admin@ariete.test` | `TestAdmin123!` |
+| bank_staff | `teststaff@ariete.test` | `TestStaff123!` |
+
+The bank_staff account's `bank_id` is a placeholder — swap it for a real Banks record ID from Airtable (in `public.profiles`) to see live account data for that bank.
 
 ## Verifying changes
 
