@@ -13,7 +13,7 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
-    const { supabase, user, userEmail } = auth.context;
+    const { user, userEmail } = auth.context;
     const adminAuditTableId = getTableIds().adminAuditLog;
     const airtableConfig = getAirtableConfig();
 
@@ -36,39 +36,16 @@ serve(async (req) => {
       .from('profiles').select('email').eq('id', userId).maybeSingle();
     const targetEmail = targetProfile?.email || userId;
 
-    const { data: targetRole } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const { error: roleGuardError } = await supabaseAdmin.rpc('guard_and_remove_admin_role', {
+      p_target_user_id: userId,
+    });
 
-    if (targetRole?.role === 'admin') {
-      const { count: adminCount } = await supabaseAdmin
-        .from('user_roles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'admin');
-
-      if ((adminCount ?? 0) <= 1) {
-        return Errors.badRequest('Cannot delete the last admin. Promote another user to admin first.');
+    if (roleGuardError) {
+      if (roleGuardError.message.includes('Cannot delete the last admin')) {
+        return Errors.badRequest(roleGuardError.message);
       }
-    }
-
-    const { error: roleDeleteError } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-
-    if (roleDeleteError) {
-      console.error('Error deleting user role:', roleDeleteError.message);
-    }
-
-    const { error: profileDeleteError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-
-    if (profileDeleteError) {
-      console.error('Error deleting profile:', profileDeleteError.message);
+      console.error('Error removing user role/profile:', roleGuardError.message);
+      return Errors.serverError('Failed to delete user');
     }
 
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);

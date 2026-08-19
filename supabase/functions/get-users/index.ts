@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
@@ -27,11 +27,8 @@ serve(async (req) => {
     const lastSignInMap = new Map<string, string | null>();
     const emailConfirmedMap = new Map<string, string | null>();
     try {
-      const authResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users?per_page=1000`, {
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-        },
+      const authResponse = await fetch(`${getSupabaseUrl()}/auth/v1/admin/users?per_page=1000`, {
+        headers: getServiceRoleHeaders(),
       });
       if (authResponse.ok) {
         const authData = await authResponse.json();

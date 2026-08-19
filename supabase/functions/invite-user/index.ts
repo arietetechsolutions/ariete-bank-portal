@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
@@ -37,10 +37,9 @@ serve(async (req) => {
     const { email, contactName, bankId, role } = validation.data;
 
     const banksTableId = getTableIds().banks;
-    if (airtableConfig && banksTableId) {
-      const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
-      if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
-    }
+    if (!airtableConfig || !banksTableId) return Errors.configError('Banks table not configured');
+    const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+    if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
 
     const supabaseAdmin = createAdminClient();
 
@@ -69,12 +68,10 @@ serve(async (req) => {
 
     const siteUrl = Deno.env.get('SITE_URL');
     if (!siteUrl) return Errors.serverError('Server configuration error');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    const generateLinkResponse = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+    const generateLinkResponse = await fetch(`${getSupabaseUrl()}/auth/v1/admin/generate_link`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${serviceRoleKey}`, 'apikey': serviceRoleKey, 'Content-Type': 'application/json' },
+      headers: getServiceRoleHeaders(),
       body: JSON.stringify({
         type: 'invite', email,
         options: { redirect_to: `${siteUrl}/set-password`, data: { contact_name: contactName, bank_id: bankId } },

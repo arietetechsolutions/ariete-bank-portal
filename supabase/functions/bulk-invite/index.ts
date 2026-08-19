@@ -39,10 +39,9 @@ serve(async (req) => {
     const { entries, bankId, role } = validation.data;
 
     const banksTableId = getTableIds().banks;
-    if (airtableConfig && banksTableId) {
-      const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
-      if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
-    }
+    if (!airtableConfig || !banksTableId) return Errors.configError('Banks table not configured');
+    const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+    if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
 
     const supabaseAdmin = createAdminClient();
 

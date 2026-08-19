@@ -9,7 +9,10 @@ import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 const updateUserSchema = z.object({
   userId: z.string().uuid("Invalid user ID"),
   role: z.enum(['admin', 'bank_staff']).optional(),
-  bankId: z.string().trim().min(1).max(100).optional(),
+  // Empty string means "clear the bank assignment" - the edit-user dialog
+  // always sends bank_id (falling back to '' when it's currently unset), so
+  // this can't require min(1) the way invite/bulk-invite's bankId can.
+  bankId: z.string().trim().max(100).optional(),
 });
 
 serve(async (req) => {
@@ -42,15 +45,18 @@ serve(async (req) => {
     const targetEmail = targetProfile?.email || userId;
 
     if (bankId !== undefined) {
-      const banksTableId = getTableIds().banks;
-      if (airtableConfig && banksTableId) {
-        const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+      const normalizedBankId = bankId === '' ? null : bankId;
+
+      if (normalizedBankId !== null) {
+        const banksTableId = getTableIds().banks;
+        if (!airtableConfig || !banksTableId) return Errors.configError('Banks table not configured');
+        const bankCheck = await fetchRecord(airtableConfig, banksTableId, normalizedBankId);
         if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
       }
 
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({ bank_id: bankId, updated_at: new Date().toISOString() })
+        .update({ bank_id: normalizedBankId, updated_at: new Date().toISOString() })
         .eq('id', userId);
 
       if (profileError) {
@@ -60,40 +66,16 @@ serve(async (req) => {
     }
 
     if (role) {
-      if (role !== 'admin') {
-        const { data: currentRole } = await supabaseAdmin
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .maybeSingle();
+      const { error: roleGuardError } = await supabaseAdmin.rpc('guard_and_swap_role', {
+        p_target_user_id: userId,
+        p_new_role: role,
+      });
 
-        if (currentRole?.role === 'admin') {
-          const { count: adminCount } = await supabaseAdmin
-            .from('user_roles')
-            .select('id', { count: 'exact', head: true })
-            .eq('role', 'admin');
-
-          if ((adminCount ?? 0) <= 1) {
-            return Errors.badRequest('Cannot remove the last admin. Promote another user to admin first.');
-          }
+      if (roleGuardError) {
+        if (roleGuardError.message.includes('Cannot remove the last admin')) {
+          return Errors.badRequest(roleGuardError.message);
         }
-      }
-
-      const { error: deleteRoleError } = await supabaseAdmin
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteRoleError) {
-        console.error('Error deleting old role:', deleteRoleError.message);
-      }
-
-      const { error: insertRoleError } = await supabaseAdmin
-        .from('user_roles')
-        .insert({ user_id: userId, role });
-
-      if (insertRoleError) {
-        console.error('Error inserting new role:', insertRoleError.message);
+        console.error('Error updating role:', roleGuardError.message);
         return Errors.serverError('Failed to update role');
       }
     }

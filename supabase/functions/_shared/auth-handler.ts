@@ -26,14 +26,19 @@ export async function authenticateRequest(req: Request, options: AuthOptions = {
   const { requireAdmin = false, requireBankId = false } = options;
 
   // checkRateLimit keys on user.id, which doesn't exist yet for an
-  // unauthenticated or bad-token request - without this IP-keyed check first,
-  // a flood of garbage-token requests has no rate limit at all and each one
-  // still costs a full round trip to the Auth server via getUser() below.
-  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim()
-    || req.headers.get('cf-connecting-ip')
-    || 'unknown';
-  const ipRateLimit = await checkRateLimit(`auth-ip:${clientIp}`, 300, 60);
-  if (!ipRateLimit.allowed) {
+  // unauthenticated or bad-token request - without a check here, a flood of
+  // garbage-token requests has no rate limit at all and each one still costs
+  // a full round trip to the Auth server via getUser() below.
+  //
+  // This is deliberately a single global counter, not keyed by client IP:
+  // x-forwarded-for is attacker-controlled and nothing in front of this
+  // function currently normalizes it, so keying on it would let an attacker
+  // forge a real bank's IP and exhaust that specific bank's bucket - a
+  // targeted lockout, which is worse than the flood this is meant to catch.
+  // Revisit with a trusted-hop-aware IP key once the production reverse-proxy
+  // topology is finalized (still undecided as of this app's initial build).
+  const preAuthRateLimit = await checkRateLimit('auth-pre-auth-global', 600, 60);
+  if (!preAuthRateLimit.allowed) {
     return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
   }
 
