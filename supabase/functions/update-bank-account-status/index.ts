@@ -50,7 +50,7 @@ serve(async (req) => {
     const bankAccount = fetchResult.record;
     const recordBankIds = (bankAccount.fields['Bank'] as string[]) || [];
 
-    if (!userBankId || !recordBankIds.includes(userBankId)) {
+    if (!isAdmin && (!userBankId || !recordBankIds.includes(userBankId))) {
       return Errors.forbidden('You do not have permission to update this account');
     }
 

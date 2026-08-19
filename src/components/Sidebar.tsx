@@ -6,8 +6,8 @@ import { useAdmin } from '@/hooks/useAdmin';
 interface NavItem { icon: React.ElementType; label: string; href: string; visible: (isAdmin: boolean) => boolean; }
 
 const navItems: NavItem[] = [
-  { icon: Landmark, label: 'Accounts', href: '/', visible: (isAdmin) => !isAdmin },
-  { icon: Users, label: 'Bank Staff', href: '/users', visible: (isAdmin) => isAdmin },
+  { icon: Landmark, label: 'Clients', href: '/', visible: () => true },
+  { icon: Users, label: 'Users', href: '/users', visible: (isAdmin) => isAdmin },
 ];
 
 const Sidebar = () => {

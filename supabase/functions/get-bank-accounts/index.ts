@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors } from "../_shared/response-formatter.ts";
-import { getAirtableConfig, getTableIds, fetchAllRecords } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchAllRecords, buildLookupMap, resolveLookup } from "../_shared/airtable-fetcher.ts";
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -23,11 +23,18 @@ serve(async (req) => {
 
     const tableIds = getTableIds();
     if (!tableIds.bankAccounts) return Errors.configError('Bank Accounts table not configured');
+    if (!tableIds.banks) return Errors.configError('Banks table not configured');
 
-    const result = await fetchAllRecords(airtableConfig, tableIds.bankAccounts);
-    if (!result.success) return Errors.serverError('Failed to fetch bank accounts');
+    const [accountsResult, banksResult] = await Promise.all([
+      fetchAllRecords(airtableConfig, tableIds.bankAccounts),
+      fetchAllRecords(airtableConfig, tableIds.banks),
+    ]);
+    if (!accountsResult.success) return Errors.serverError('Failed to fetch bank accounts');
+    if (!banksResult.success) return Errors.serverError('Failed to fetch banks');
 
-    const bankAccounts = result.records.map((record) => {
+    const bankNameMap = buildLookupMap(banksResult.records, 'bank');
+
+    const bankAccounts = accountsResult.records.map((record) => {
       const fields = record.fields;
       const bankLinks = (fields['Bank'] as string[]) || [];
       const emailField = fields['Email'];
@@ -36,14 +43,15 @@ serve(async (req) => {
         id: record.id,
         client_name: (fields['Client'] as string) || '',
         email,
+        bank_name: resolveLookup(bankLinks, bankNameMap),
         status: (fields['Bank account status'] as string) || '',
         created_at: record.createdTime,
         bank_ids: bankLinks,
       };
     });
 
-    const filtered = bankAccounts
-      .filter((acc) => userBankId ? acc.bank_ids.includes(userBankId) : false)
+    // Admins see every bank's accounts; bank staff only see their own bank's.
+    const filtered = (isAdmin ? bankAccounts : bankAccounts.filter((acc) => userBankId ? acc.bank_ids.includes(userBankId) : false))
       .map(({ bank_ids, ...rest }) => rest);
 
     return successResponse({ bankAccounts: filtered });

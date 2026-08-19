@@ -17,6 +17,7 @@ export interface BankAccountRecord {
   id: string;
   client_name: string;
   email: string;
+  bank_name: string;
   status: BankAccountStatus | '';
   created_at: string;
 }

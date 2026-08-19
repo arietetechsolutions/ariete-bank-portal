@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -17,19 +16,10 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { isAdmin, isLoading: isAdminLoading } = useAdmin();
+  const { isAdmin } = useAdmin();
   const { data: bankAccounts, isLoading, error, refetch } = useBankAccounts();
   const { updateStatus, isUpdating } = useUpdateBankAccountStatus();
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; newStatus: BankAccountStatus } | null>(null);
-
-  useEffect(() => {
-    if (!isAdminLoading && isAdmin) navigate('/users');
-  }, [isAdmin, isAdminLoading, navigate]);
-
-  if (isAdminLoading || isAdmin) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  }
 
   const handleStatusChange = (id: string, newStatus: BankAccountStatus) => {
     setConfirmDialog({ id, newStatus });
@@ -54,7 +44,7 @@ const Dashboard = () => {
         <Sidebar />
         <main className="flex-1 p-6 lg:p-8">
           <div className="max-w-5xl mx-auto">
-            <h1 className="text-2xl font-bold text-foreground mb-6">Your Accounts</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-6">{isAdmin ? 'All Clients' : 'Your Accounts'}</h1>
 
             <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
               <AlertDialogContent>
@@ -88,6 +78,7 @@ const Dashboard = () => {
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="text-muted-foreground font-semibold">Client</TableHead>
                       <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
+                      {isAdmin && <TableHead className="text-muted-foreground font-semibold">Bank</TableHead>}
                       <TableHead className="text-muted-foreground font-semibold">Date Added</TableHead>
                       <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
                     </TableRow>
@@ -97,6 +88,7 @@ const Dashboard = () => {
                       <TableRow key={acc.id} className="border-border hover:bg-secondary/30">
                         <TableCell className="font-medium text-foreground">{acc.client_name || '-'}</TableCell>
                         <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
+                        {isAdmin && <TableCell className="text-muted-foreground">{acc.bank_name || '-'}</TableCell>}
                         <TableCell className="text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}</TableCell>
                         <TableCell>
                           <Select
