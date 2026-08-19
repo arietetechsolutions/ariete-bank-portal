@@ -75,6 +75,8 @@ const Dashboard = () => {
                   <TableHeader>
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="text-muted-foreground font-semibold">Client</TableHead>
+                      <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
+                      <TableHead className="text-muted-foreground font-semibold">Date Added</TableHead>
                       <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -82,6 +84,8 @@ const Dashboard = () => {
                     {bankAccounts.map((acc) => (
                       <TableRow key={acc.id} className="border-border hover:bg-secondary/30">
                         <TableCell className="font-medium text-foreground">{acc.client_name || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}</TableCell>
                         <TableCell>
                           <Select
                             value={acc.status || undefined}

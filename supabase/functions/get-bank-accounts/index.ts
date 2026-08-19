@@ -30,9 +30,12 @@ serve(async (req) => {
     const bankAccounts = result.records.map((record) => {
       const fields = record.fields;
       const bankLinks = (fields['Bank'] as string[]) || [];
+      const emailField = fields['Email'];
+      const email = Array.isArray(emailField) ? (emailField[0] as string) || '' : (emailField as string) || '';
       return {
         id: record.id,
         client_name: (fields['Client'] as string) || '',
+        email,
         status: (fields['Bank account status'] as string) || '',
         created_at: record.createdTime,
         bank_ids: bankLinks,

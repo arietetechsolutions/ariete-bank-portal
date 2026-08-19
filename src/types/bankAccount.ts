@@ -16,6 +16,7 @@ export const BANK_ACCOUNT_STATUSES: BankAccountStatus[] = [
 export interface BankAccountRecord {
   id: string;
   client_name: string;
+  email: string;
   status: BankAccountStatus | '';
   created_at: string;
 }
