@@ -116,7 +116,7 @@ serve(async (req) => {
         template: {
           id: Deno.env.get('RESEND_TEMPLATE_INVITE')!,
           variables: {
-            agentName: contactName,
+            userName: contactName,
             actionLink: action_link,
           },
         },

@@ -94,7 +94,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Ariete Capital <noreply@arietecapital.com>',
         to: [email],
-        template: { id: Deno.env.get('RESEND_TEMPLATE_INVITE')!, variables: { agentName: contactName, actionLink } },
+        template: { id: Deno.env.get('RESEND_TEMPLATE_INVITE')!, variables: { userName: contactName, actionLink } },
       }),
     });
 
