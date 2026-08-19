@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { authenticateRequest } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors } from "../_shared/response-formatter.ts";
 
 serve(async (req) => {
@@ -10,7 +10,9 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
-    const { supabase } = auth.context;
+    // RLS on profiles/user_roles only allows a user to see their own row, so
+    // we need the service-role client here to see every bank-staff account.
+    const supabase = createAdminClient();
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles').select('*').order('created_at', { ascending: false });
@@ -42,12 +44,16 @@ serve(async (req) => {
     }
 
     const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
-    const users = profiles?.map(profile => ({
-      ...profile,
-      role: rolesMap.get(profile.id) || 'bank_staff',
-      last_sign_in_at: lastSignInMap.get(profile.id) || null,
-      email_confirmed_at: emailConfirmedMap.get(profile.id) || null,
-    })) || [];
+    // This screen manages bank-staff accounts only - admins (including the
+    // caller themselves) never belong in this list.
+    const users = (profiles || [])
+      .map(profile => ({
+        ...profile,
+        role: rolesMap.get(profile.id) || 'bank_staff',
+        last_sign_in_at: lastSignInMap.get(profile.id) || null,
+        email_confirmed_at: emailConfirmedMap.get(profile.id) || null,
+      }))
+      .filter(profile => profile.role !== 'admin');
 
     return successResponse({ users });
   } catch (error) {

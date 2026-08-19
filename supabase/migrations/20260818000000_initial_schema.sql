@@ -76,9 +76,12 @@ DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
 CREATE POLICY "Users can view own roles" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
 
 -- RLS policies restrict which *rows* a role can see, but Postgres also
--- requires a separate GRANT before a role can touch the table at all.
+-- requires a separate GRANT before a role can touch the table at all -
+-- this applies even to service_role, which only bypasses RLS, not GRANT.
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT ON public.user_roles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_roles TO service_role;
 
 -- Rate limiting table for Edge Functions (stateless)
 CREATE TABLE IF NOT EXISTS rate_limits (
