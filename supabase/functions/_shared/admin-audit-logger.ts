@@ -17,13 +17,25 @@ export interface AdminAuditParams {
 // audit write silently attempted (and failed) against a nonexistent table.
 const REAL_TABLE_ID = /^tbl[a-zA-Z0-9]+$/;
 
+// Any "fire and forget after the response is sent" background write (audit
+// logs, in this codebase) needs EdgeRuntime.waitUntil, or the edge runtime
+// can tear down the isolate right after the response is returned - killing
+// the write, or even its own .catch() handler, before either ever runs.
+// Shared so every audit-log call site (admin actions here, and the
+// AML-status-change log in update-bank-account-status) gets the same
+// guarantee instead of re-implementing this by hand.
+export function backgroundTask(promise: Promise<unknown>): void {
+  const runtime = (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime;
+  if (runtime?.waitUntil) {
+    runtime.waitUntil(promise);
+  }
+}
+
 // Non-blocking by design - an audit-log write failing must never break the
 // admin action it's logging. Two bugs previously made failures invisible:
 // (1) createRecord() resolves {success:false} on an Airtable API error
-// rather than throwing, so the old bare `.catch()` never fired for that
-// case; (2) without EdgeRuntime.waitUntil, the edge runtime can tear down
-// the isolate right after the response is sent, killing this write - or
-// even its own .catch() handler - before it ever runs.
+// rather than throwing, so a bare `.catch()` never fired for that case;
+// (2) the isolate-teardown race described above on backgroundTask().
 export function logAdminAction(
   config: AirtableConfig | null,
   tableId: string | undefined,
@@ -38,19 +50,16 @@ export function logAdminAction(
     return;
   }
 
-  const writePromise = createRecord(config, tableId, {
-    action: params.action,
-    performed_by: params.performedBy,
-    target_email: params.targetEmail,
-    details: params.details,
-    result: params.result,
-    timestamp: new Date().toISOString(),
-  }).then((result) => {
-    if (!result.success) console.error('[AdminAudit] Failed to write admin audit log:', result.error);
-  }).catch((err) => console.error('[AdminAudit] Failed to write admin audit log:', err));
-
-  const runtime = (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime;
-  if (runtime?.waitUntil) {
-    runtime.waitUntil(writePromise);
-  }
+  backgroundTask(
+    createRecord(config, tableId, {
+      action: params.action,
+      performed_by: params.performedBy,
+      target_email: params.targetEmail,
+      details: params.details,
+      result: params.result,
+      timestamp: new Date().toISOString(),
+    }).then((result) => {
+      if (!result.success) console.error('[AdminAudit] Failed to write admin audit log:', result.error);
+    }).catch((err) => console.error('[AdminAudit] Failed to write admin audit log:', err))
+  );
 }

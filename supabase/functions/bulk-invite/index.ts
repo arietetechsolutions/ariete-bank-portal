@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders, fetchAllAuthUsers } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
@@ -47,19 +47,10 @@ serve(async (req) => {
 
     const existingUsersMap = new Map<string, { id: string; email: string }>();
     try {
-      const authResponse = await fetch(
-        `${getSupabaseUrl()}/auth/v1/admin/users?per_page=1000`,
-        { headers: getServiceRoleHeaders() }
-      );
-      if (authResponse.ok) {
-        const authData = await authResponse.json();
-        const authUsers = authData.users || authData;
-        if (Array.isArray(authUsers)) {
-          authUsers.forEach((u: { id: string; email?: string }) => {
-            if (u.email) existingUsersMap.set(u.email, { id: u.id, email: u.email });
-          });
-        }
-      }
+      const authUsers = await fetchAllAuthUsers();
+      authUsers.forEach((u) => {
+        if (u.email) existingUsersMap.set(u.email, { id: u.id, email: u.email });
+      });
     } catch (err) {
       console.error('Error fetching existing users:', err);
     }

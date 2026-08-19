@@ -102,3 +102,42 @@ export function getServiceRoleHeaders(): Record<string, string> {
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   return { 'Authorization': `Bearer ${key}`, 'apikey': key, 'Content-Type': 'application/json' };
 }
+
+export interface AuthUserSummary {
+  id: string;
+  email?: string;
+  last_sign_in_at?: string | null;
+  email_confirmed_at?: string | null;
+}
+
+// GoTrue's admin/users endpoint paginates (max page size 1000) - a single
+// `per_page=1000` request silently only returns the first page. That was
+// invisible below ~1000 total users, but would have made get-users drop
+// enrichment data for later users and made bulk-invite treat already-invited
+// users past the first page as brand new (re-inviting them instead of
+// updating their existing profile) the moment the user base grew past it.
+export async function fetchAllAuthUsers(): Promise<AuthUserSummary[]> {
+  const all: AuthUserSummary[] = [];
+  let page = 1;
+  const perPage = 1000;
+
+  while (true) {
+    const response = await fetch(
+      `${getSupabaseUrl()}/auth/v1/admin/users?per_page=${perPage}&page=${page}`,
+      { headers: getServiceRoleHeaders() },
+    );
+    if (!response.ok) {
+      console.error(`fetchAllAuthUsers: admin/users page ${page} returned ${response.status}`);
+      break;
+    }
+    const data = await response.json();
+    const users = (data.users || data) as AuthUserSummary[];
+    if (!Array.isArray(users) || users.length === 0) break;
+
+    all.push(...users);
+    if (users.length < perPage) break;
+    page += 1;
+  }
+
+  return all;
+}

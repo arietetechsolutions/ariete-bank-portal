@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient, fetchAllAuthUsers } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
@@ -27,19 +27,11 @@ serve(async (req) => {
     const lastSignInMap = new Map<string, string | null>();
     const emailConfirmedMap = new Map<string, string | null>();
     try {
-      const authResponse = await fetch(`${getSupabaseUrl()}/auth/v1/admin/users?per_page=1000`, {
-        headers: getServiceRoleHeaders(),
+      const authUsers = await fetchAllAuthUsers();
+      authUsers.forEach((u) => {
+        lastSignInMap.set(u.id, u.last_sign_in_at || null);
+        emailConfirmedMap.set(u.id, u.email_confirmed_at || null);
       });
-      if (authResponse.ok) {
-        const authData = await authResponse.json();
-        const authUsers = authData.users || authData;
-        if (Array.isArray(authUsers)) {
-          authUsers.forEach((u: { id: string; last_sign_in_at?: string | null; email_confirmed_at?: string | null }) => {
-            lastSignInMap.set(u.id, u.last_sign_in_at || null);
-            emailConfirmedMap.set(u.id, u.email_confirmed_at || null);
-          });
-        }
-      }
     } catch (authErr) {
       console.error('Error fetching auth users:', authErr instanceof Error ? authErr.message : 'Unknown error');
     }
