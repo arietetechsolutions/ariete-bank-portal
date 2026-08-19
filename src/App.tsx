@@ -6,6 +6,7 @@ import Auth from "./pages/Auth";
 import SetPassword from "./pages/SetPassword";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import AuthCallbackHandler from "./components/AuthCallbackHandler";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
@@ -24,7 +25,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/set-password" element={<SetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+            <Route path="/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AdminProvider>

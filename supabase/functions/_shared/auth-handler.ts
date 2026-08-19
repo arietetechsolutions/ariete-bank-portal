@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "./cors.ts";
+import { checkRateLimit } from "./rate-limiter.ts";
 
 export interface AuthContext {
   user: User;
@@ -23,6 +24,18 @@ export type AuthResult =
 
 export async function authenticateRequest(req: Request, options: AuthOptions = {}): Promise<AuthResult> {
   const { requireAdmin = false, requireBankId = false } = options;
+
+  // checkRateLimit keys on user.id, which doesn't exist yet for an
+  // unauthenticated or bad-token request - without this IP-keyed check first,
+  // a flood of garbage-token requests has no rate limit at all and each one
+  // still costs a full round trip to the Auth server via getUser() below.
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim()
+    || req.headers.get('cf-connecting-ip')
+    || 'unknown';
+  const ipRateLimit = await checkRateLimit(`auth-ip:${clientIp}`, 300, 60);
+  if (!ipRateLimit.allowed) {
+    return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
+  }
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -71,4 +84,16 @@ export function createAdminClient(): SupabaseClient {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+}
+
+export function getSupabaseUrl(): string {
+  return Deno.env.get('SUPABASE_URL')!;
+}
+
+// For the functions that call Supabase's admin REST endpoints directly via
+// fetch (generate_link, invite, admin/users) instead of the supabase-js
+// client - was previously copy-pasted verbatim in three separate functions.
+export function getServiceRoleHeaders(): Record<string, string> {
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  return { 'Authorization': `Bearer ${key}`, 'apikey': key, 'Content-Type': 'application/json' };
 }

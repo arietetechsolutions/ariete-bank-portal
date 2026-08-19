@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { authenticateRequest } from "../_shared/auth-handler.ts";
+import { authenticateRequest, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
@@ -8,15 +8,6 @@ import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 interface ResendInviteBody {
   userId: string;
 }
-
-const getSupabaseUrl = () => Deno.env.get('SUPABASE_URL')!;
-const getServiceRoleKey = () => Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const adminHeaders = () => ({
-  'Authorization': `Bearer ${getServiceRoleKey()}`,
-  'apikey': getServiceRoleKey(),
-  'Content-Type': 'application/json',
-});
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -45,7 +36,7 @@ serve(async (req) => {
 
     const getUserResponse = await fetch(
       `${getSupabaseUrl()}/auth/v1/admin/users/${userId}`,
-      { headers: adminHeaders() }
+      { headers: getServiceRoleHeaders() }
     );
 
     if (!getUserResponse.ok) {
@@ -75,7 +66,7 @@ serve(async (req) => {
       `${getSupabaseUrl()}/auth/v1/admin/generate_link`,
       {
         method: 'POST',
-        headers: adminHeaders(),
+        headers: getServiceRoleHeaders(),
         body: JSON.stringify({
           type: 'magiclink',
           email: targetEmail,

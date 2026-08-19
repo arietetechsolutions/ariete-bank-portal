@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { authenticateRequest } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
@@ -31,14 +30,28 @@ serve(async (req) => {
       return Errors.badRequest('Cannot delete your own account');
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    const supabaseAdmin = createAdminClient();
 
     const { data: targetProfile } = await supabaseAdmin
       .from('profiles').select('email').eq('id', userId).maybeSingle();
     const targetEmail = targetProfile?.email || userId;
+
+    const { data: targetRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (targetRole?.role === 'admin') {
+      const { count: adminCount } = await supabaseAdmin
+        .from('user_roles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'admin');
+
+      if ((adminCount ?? 0) <= 1) {
+        return Errors.badRequest('Cannot delete the last admin. Promote another user to admin first.');
+      }
+    }
 
     const { error: roleDeleteError } = await supabase
       .from('user_roles')

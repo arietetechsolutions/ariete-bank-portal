@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { authenticateRequest } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
-import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 const inviteSchema = z.object({
@@ -37,11 +36,13 @@ serve(async (req) => {
 
     const { email, contactName, bankId, role } = validation.data;
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+    const banksTableId = getTableIds().banks;
+    if (airtableConfig && banksTableId) {
+      const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+      if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
+    }
+
+    const supabaseAdmin = createAdminClient();
 
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles').select('id, email').eq('email', email).maybeSingle();

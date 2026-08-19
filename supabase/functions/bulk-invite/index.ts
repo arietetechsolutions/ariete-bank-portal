@@ -1,28 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
-import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
-interface BulkInviteEntry {
-  email: string;
-  contactName: string;
-}
-
-interface BulkInviteBody {
-  entries: BulkInviteEntry[];
-  bankId: string;
-  role?: string;
-}
-
-const getSupabaseUrl = () => Deno.env.get('SUPABASE_URL')!;
-const getServiceRoleKey = () => Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const adminHeaders = () => ({
-  'Authorization': `Bearer ${getServiceRoleKey()}`,
-  'apikey': getServiceRoleKey(),
-  'Content-Type': 'application/json',
+const bulkInviteSchema = z.object({
+  entries: z.array(z.object({
+    email: z.string().trim().email("Invalid email format").max(255),
+    contactName: z.string().trim().min(1, "Contact name is required").max(100),
+  })).min(1, "At least one entry is required").max(50, "Maximum 50 entries per batch"),
+  bankId: z.string().trim().min(1, "Bank is required").max(100),
+  role: z.enum(['admin', 'bank_staff']).default('bank_staff'),
 });
 
 serve(async (req) => {
@@ -40,19 +30,18 @@ serve(async (req) => {
     const rateLimit = await checkRateLimit(`bulk-invite:${auth.context.user.id}`, 5, 60);
     if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
-    const body = await parseJsonBody<BulkInviteBody>(req, 50000);
+    const body = await parseJsonBody<z.infer<typeof bulkInviteSchema>>(req, 50000);
     if (!body.success) return body.response;
 
-    const { entries, bankId, role = 'bank_staff' } = body.data;
+    const validation = bulkInviteSchema.safeParse(body.data);
+    if (!validation.success) return Errors.badRequest('Invalid input data');
 
-    if (!entries || !Array.isArray(entries) || entries.length === 0) {
-      return Errors.badRequest('At least one entry is required');
-    }
-    if (!bankId) {
-      return Errors.badRequest('Bank ID is required');
-    }
-    if (entries.length > 50) {
-      return Errors.badRequest('Maximum 50 entries per batch');
+    const { entries, bankId, role } = validation.data;
+
+    const banksTableId = getTableIds().banks;
+    if (airtableConfig && banksTableId) {
+      const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+      if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
     }
 
     const supabaseAdmin = createAdminClient();
@@ -61,7 +50,7 @@ serve(async (req) => {
     try {
       const authResponse = await fetch(
         `${getSupabaseUrl()}/auth/v1/admin/users?per_page=1000`,
-        { headers: adminHeaders() }
+        { headers: getServiceRoleHeaders() }
       );
       if (authResponse.ok) {
         const authData = await authResponse.json();
@@ -118,9 +107,14 @@ serve(async (req) => {
             .maybeSingle();
 
           if (!existingRole) {
-            await supabaseAdmin
+            const { error: insertRoleError } = await supabaseAdmin
               .from('user_roles')
               .insert({ user_id: existingUser.id, role });
+
+            if (insertRoleError) {
+              results.failed.push({ email: trimmedEmail, error: insertRoleError.message });
+              continue;
+            }
           }
 
           results.succeeded.push(trimmedEmail);
@@ -129,7 +123,7 @@ serve(async (req) => {
             `${getSupabaseUrl()}/auth/v1/invite`,
             {
               method: 'POST',
-              headers: adminHeaders(),
+              headers: getServiceRoleHeaders(),
               body: JSON.stringify({
                 email: trimmedEmail,
                 data: { contact_name: contactName, bank_id: bankId },
@@ -157,9 +151,14 @@ serve(async (req) => {
                 updated_at: new Date().toISOString(),
               }, { onConflict: 'id' });
 
-            await supabaseAdmin
+            const { error: insertRoleError } = await supabaseAdmin
               .from('user_roles')
               .insert({ user_id: newUserId, role });
+
+            if (insertRoleError) {
+              results.failed.push({ email: trimmedEmail, error: insertRoleError.message });
+              continue;
+            }
           }
 
           results.succeeded.push(trimmedEmail);

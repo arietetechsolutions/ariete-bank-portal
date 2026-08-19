@@ -1,16 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { authenticateRequest } from "../_shared/auth-handler.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
-import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
-interface UpdateUserBody {
-  userId: string;
-  role?: string;
-  bankId?: string;
-}
+const updateUserSchema = z.object({
+  userId: z.string().uuid("Invalid user ID"),
+  role: z.enum(['admin', 'bank_staff']).optional(),
+  bankId: z.string().trim().min(1).max(100).optional(),
+});
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -27,22 +27,27 @@ serve(async (req) => {
     const rateLimit = await checkRateLimit(`update-user:${auth.context.user.id}`, 20, 60);
     if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
-    const body = await parseJsonBody<UpdateUserBody>(req);
+    const body = await parseJsonBody<z.infer<typeof updateUserSchema>>(req);
     if (!body.success) return body.response;
 
-    const { userId, role, bankId } = body.data;
-    if (!userId) return Errors.badRequest('User ID is required');
+    const validation = updateUserSchema.safeParse(body.data);
+    if (!validation.success) return Errors.badRequest('Invalid input data');
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    const { userId, role, bankId } = validation.data;
+
+    const supabaseAdmin = createAdminClient();
 
     const { data: targetProfile } = await supabaseAdmin
       .from('profiles').select('email').eq('id', userId).maybeSingle();
     const targetEmail = targetProfile?.email || userId;
 
     if (bankId !== undefined) {
+      const banksTableId = getTableIds().banks;
+      if (airtableConfig && banksTableId) {
+        const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+        if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
+      }
+
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({ bank_id: bankId, updated_at: new Date().toISOString() })
