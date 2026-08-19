@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import arieteLogo from '@/assets/ariete-logo.png';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useMyBank } from '@/hooks/useMyBank';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const Header = () => {
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const { bankName } = useMyBank();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -28,7 +30,7 @@ const Header = () => {
             </div>
             <div className="text-sm">
               <p className="font-medium text-foreground">{user?.email || 'User'}</p>
-              <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Bank Staff'}</p>
+              <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : (bankName || 'Bank Staff')}</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
