@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Loader2, AlertCircle, Landmark, UserPlus, CircleCheck, Clock, ArrowRightLeft, ShieldCheck } from 'lucide-react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
@@ -15,11 +15,28 @@ import { useUpdateBankAccountStatus } from '@/hooks/useUpdateBankAccountStatus';
 import { useAdmin } from '@/hooks/useAdmin';
 import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
 
+const STATUS_ICONS: Record<BankAccountStatus, React.ElementType> = {
+  'Onboarding': UserPlus,
+  'Account Opened': CircleCheck,
+  'Waiting for transfer': Clock,
+  'Transfer made - waiting for AML letter': ArrowRightLeft,
+  'AML Letter Issued': ShieldCheck,
+};
+
 const Dashboard = () => {
   const { isAdmin } = useAdmin();
   const { data: bankAccounts, isLoading, error, refetch } = useBankAccounts();
   const { updateStatus, isUpdating } = useUpdateBankAccountStatus();
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; newStatus: BankAccountStatus } | null>(null);
+
+  const statusCounts = useMemo(() => {
+    const counts = new Map<BankAccountStatus, number>();
+    for (const s of BANK_ACCOUNT_STATUSES) counts.set(s, 0);
+    for (const acc of bankAccounts || []) {
+      if (acc.status) counts.set(acc.status, (counts.get(acc.status) || 0) + 1);
+    }
+    return counts;
+  }, [bankAccounts]);
 
   const handleStatusChange = (id: string, newStatus: BankAccountStatus) => {
     setConfirmDialog({ id, newStatus });
@@ -43,8 +60,11 @@ const Dashboard = () => {
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-6 lg:p-8">
-          <div className="max-w-5xl mx-auto">
-            <h1 className="text-2xl font-bold text-foreground mb-6">{isAdmin ? 'All Clients' : 'Your Accounts'}</h1>
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-2xl font-bold text-foreground mb-1">{isAdmin ? 'All Clients' : 'Your Accounts'}</h1>
+            <p className="text-muted-foreground mb-6">
+              {isAdmin ? 'Every client across both banks' : 'Track and update your clients’ account-opening status'}
+            </p>
 
             <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
               <AlertDialogContent>
@@ -61,6 +81,30 @@ const Dashboard = () => {
               </AlertDialogContent>
             </AlertDialog>
 
+            {!isLoading && !error && bankAccounts && bankAccounts.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+                <div className="bg-gradient-card border border-border rounded-lg p-4 shadow-card">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Landmark className="w-4 h-4" />
+                    <span className="text-xs font-medium">Total</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{bankAccounts.length}</p>
+                </div>
+                {BANK_ACCOUNT_STATUSES.map((status) => {
+                  const Icon = STATUS_ICONS[status];
+                  return (
+                    <div key={status} className="bg-gradient-card border border-border rounded-lg p-4 shadow-card">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <Icon className="w-4 h-4" />
+                        <span className="text-xs font-medium leading-tight">{status}</span>
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">{statusCounts.get(status)}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {isLoading ? (
               <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
             ) : error ? (
@@ -70,50 +114,56 @@ const Dashboard = () => {
                 <Button variant="outline" onClick={() => refetch()}>Retry</Button>
               </div>
             ) : !bankAccounts || bankAccounts.length === 0 ? (
-              <div className="bg-secondary/50 rounded-lg p-12 text-center text-muted-foreground">No accounts yet.</div>
+              <div className="bg-secondary/50 rounded-lg p-12 text-center">
+                <Landmark className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-foreground font-medium mb-1">No accounts yet</p>
+                <p className="text-muted-foreground text-sm">Clients will appear here once they're routed to a bank</p>
+              </div>
             ) : (
               <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-muted-foreground font-semibold">Client</TableHead>
-                      <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
-                      {isAdmin && <TableHead className="text-muted-foreground font-semibold">Bank</TableHead>}
-                      <TableHead className="text-muted-foreground font-semibold">Date Added</TableHead>
-                      <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bankAccounts.map((acc) => (
-                      <TableRow key={acc.id} className="border-border hover:bg-secondary/30">
-                        <TableCell className="font-medium text-foreground">{acc.client_name || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
-                        {isAdmin && <TableCell className="text-muted-foreground">{acc.bank_name || '-'}</TableCell>}
-                        <TableCell className="text-muted-foreground">{new Date(acc.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={acc.status || undefined}
-                            onValueChange={(value) => handleStatusChange(acc.id, value as BankAccountStatus)}
-                            disabled={isUpdating === acc.id}
-                          >
-                            <SelectTrigger className="w-[280px] h-8">
-                              {isUpdating === acc.id ? (
-                                <div className="flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /><span>Updating...</span></div>
-                              ) : (
-                                <SelectValue placeholder="Select status" />
-                              )}
-                            </SelectTrigger>
-                            <SelectContent>
-                              {BANK_ACCOUNT_STATUSES.map((s) => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground font-semibold">Client</TableHead>
+                        <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
+                        {isAdmin && <TableHead className="text-muted-foreground font-semibold">Bank</TableHead>}
+                        <TableHead className="text-muted-foreground font-semibold">Date Added</TableHead>
+                        <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {bankAccounts.map((acc) => (
+                        <TableRow key={acc.id} className="border-border hover:bg-secondary/30">
+                          <TableCell className="font-medium text-foreground">{acc.client_name || '-'}</TableCell>
+                          <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
+                          {isAdmin && <TableCell className="text-muted-foreground">{acc.bank_name || '-'}</TableCell>}
+                          <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(acc.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={acc.status || undefined}
+                              onValueChange={(value) => handleStatusChange(acc.id, value as BankAccountStatus)}
+                              disabled={isUpdating === acc.id}
+                            >
+                              <SelectTrigger className="w-[280px] h-8">
+                                {isUpdating === acc.id ? (
+                                  <div className="flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /><span>Updating...</span></div>
+                                ) : (
+                                  <SelectValue placeholder="Select status" />
+                                )}
+                              </SelectTrigger>
+                              <SelectContent>
+                                {BANK_ACCOUNT_STATUSES.map((s) => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             )}
           </div>

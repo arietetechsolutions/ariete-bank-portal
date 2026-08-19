@@ -10,30 +10,36 @@ const navItems: NavItem[] = [
   { icon: Users, label: 'Users', href: '/users', visible: (isAdmin) => isAdmin },
 ];
 
-const Sidebar = () => {
+export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
   const location = useLocation();
   const { isAdmin } = useAdmin();
 
   return (
+    <ul className="space-y-1">
+      {navItems.map((item) => {
+        if (!item.visible(isAdmin)) return null;
+        const isActive = location.pathname === item.href;
+        return (
+          <li key={item.label}>
+            <Link to={item.href} onClick={onNavigate} className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            )}>
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
+
+const Sidebar = () => {
+  return (
     <aside className="hidden md:flex w-64 min-h-[calc(100vh-73px)] bg-card border-r border-border flex-col">
       <nav className="flex-1 p-4">
-        <ul className="space-y-1">
-          {navItems.map((item) => {
-            if (!item.visible(isAdmin)) return null;
-            const isActive = location.pathname === item.href;
-            return (
-              <li key={item.label}>
-                <Link to={item.href} className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                )}>
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <SidebarNav />
       </nav>
     </aside>
   );
