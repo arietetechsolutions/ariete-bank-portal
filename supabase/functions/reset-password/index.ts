@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
+import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 interface ResetPasswordBody {
   userId: string;
@@ -24,7 +26,9 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
-    const { user } = auth.context;
+    const { user, userEmail } = auth.context;
+    const adminAuditTableId = getTableIds().adminAuditLog;
+    const airtableConfig = getAirtableConfig();
 
     const rateLimit = await checkRateLimit(`reset-password:${user.id}`, 3, 3600);
     if (!rateLimit.allowed) {
@@ -110,7 +114,8 @@ serve(async (req) => {
         template: {
           id: Deno.env.get('RESEND_TEMPLATE_RESET')!,
           variables: {
-            userName: contactName,
+            agentName: contactName,
+            bankportalUser: contactName,
             actionLink: action_link,
           },
         },
@@ -124,6 +129,11 @@ serve(async (req) => {
       try { const parsed = JSON.parse(errorText); detail = parsed.message || detail; } catch { /* ignore parse error */ }
       return Errors.serverError(detail);
     }
+
+    logAdminAction(airtableConfig, adminAuditTableId, {
+      action: 'RESET_PASSWORD', performedBy: userEmail, targetEmail,
+      details: `Sent password reset to ${targetEmail}`, result: 'SUCCESS',
+    });
 
     return successResponse({
       message: `Password reset email sent to ${targetEmail}`,

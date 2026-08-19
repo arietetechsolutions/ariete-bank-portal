@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
+import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 interface ResendInviteBody {
   userId: string;
@@ -24,7 +26,9 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
-    const { user } = auth.context;
+    const { user, userEmail } = auth.context;
+    const adminAuditTableId = getTableIds().adminAuditLog;
+    const airtableConfig = getAirtableConfig();
 
     const rateLimit = await checkRateLimit(`resend-invite:${user.id}`, 5, 60);
     if (!rateLimit.allowed) {
@@ -116,8 +120,8 @@ serve(async (req) => {
         template: {
           id: Deno.env.get('RESEND_TEMPLATE_INVITE')!,
           variables: {
-            userName: contactName,
-            actionLink: action_link,
+            bankportaluser: contactName,
+            actionlink: action_link,
           },
         },
       }),
@@ -130,6 +134,11 @@ serve(async (req) => {
       try { const parsed = JSON.parse(errorText); detail = parsed.message || detail; } catch { /* ignore parse error */ }
       return Errors.serverError(detail);
     }
+
+    logAdminAction(airtableConfig, adminAuditTableId, {
+      action: 'RESEND_INVITE', performedBy: userEmail, targetEmail,
+      details: `Resent invite to ${targetEmail}`, result: 'SUCCESS',
+    });
 
     return successResponse({
       message: `Invitation resent to ${targetEmail}`,

@@ -19,6 +19,7 @@ export function getTableIds() {
     bankAccounts: Deno.env.get('AIRTABLE_BANK_ACCOUNTS_TABLE_ID'),
     banks: Deno.env.get('AIRTABLE_BANKS_TABLE_ID'),
     auditLog: Deno.env.get('AIRTABLE_AUDIT_LOG_TABLE_ID'),
+    adminAuditLog: Deno.env.get('AIRTABLE_ADMIN_AUDIT_LOG_TABLE_ID'),
   };
 }
 

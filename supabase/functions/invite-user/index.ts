@@ -4,6 +4,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
+import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 const inviteSchema = z.object({
   email: z.string().trim().email("Invalid email format").max(255),
@@ -20,7 +22,9 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
-    const { user } = auth.context;
+    const { user, userEmail } = auth.context;
+    const adminAuditTableId = getTableIds().adminAuditLog;
+    const airtableConfig = getAirtableConfig();
 
     const rateLimit = await checkRateLimit(`invite-user:${user.id}`, 10, 60);
     if (!rateLimit.allowed) return Errors.rateLimitExceeded();
@@ -53,6 +57,11 @@ serve(async (req) => {
       if (!existingRole) {
         await supabaseAdmin.from('user_roles').insert({ user_id: existingProfile.id, role });
       }
+
+      logAdminAction(airtableConfig, adminAuditTableId, {
+        action: 'INVITE', performedBy: userEmail, targetEmail: email,
+        details: `Updated existing profile for ${email} (bank_id: ${bankId}, role: ${role})`, result: 'SUCCESS',
+      });
 
       return successResponse({ message: 'User profile updated successfully', userId: existingProfile.id });
     }
@@ -94,7 +103,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Ariete Capital <noreply@arietecapital.com>',
         to: [email],
-        template: { id: Deno.env.get('RESEND_TEMPLATE_INVITE')!, variables: { userName: contactName, actionLink } },
+        template: { id: Deno.env.get('RESEND_TEMPLATE_INVITE')!, variables: { bankportaluser: contactName, actionlink: actionLink } },
       }),
     });
 
@@ -111,6 +120,11 @@ serve(async (req) => {
       }, { onConflict: 'id' });
       await supabaseAdmin.from('user_roles').insert({ user_id: invitedUserId, role });
     }
+
+    logAdminAction(airtableConfig, adminAuditTableId, {
+      action: 'INVITE', performedBy: userEmail, targetEmail: email,
+      details: `Invited new user ${email} (bank_id: ${bankId}, role: ${role})`, result: 'SUCCESS',
+    });
 
     return successResponse({ message: 'Invitation sent successfully', userId: invitedUserId });
   } catch (error) {

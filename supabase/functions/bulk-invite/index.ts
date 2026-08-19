@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
+import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 interface BulkInviteEntry {
   email: string;
@@ -30,6 +32,10 @@ serve(async (req) => {
   try {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
+
+    const { userEmail } = auth.context;
+    const adminAuditTableId = getTableIds().adminAuditLog;
+    const airtableConfig = getAirtableConfig();
 
     const rateLimit = await checkRateLimit(`bulk-invite:${auth.context.user.id}`, 5, 60);
     if (!rateLimit.allowed) return Errors.rateLimitExceeded();
@@ -164,6 +170,12 @@ serve(async (req) => {
         console.error(`Error processing ${trimmedEmail}:`, errorMsg);
       }
     }
+
+    logAdminAction(airtableConfig, adminAuditTableId, {
+      action: 'BULK_INVITE', performedBy: userEmail, targetEmail: `${entries.length} entries`,
+      details: `Bulk invite to bank_id ${bankId}: ${results.succeeded.length} succeeded, ${results.failed.length} failed`,
+      result: results.failed.length === 0 ? 'SUCCESS' : 'FAIL',
+    });
 
     return successResponse({
       succeeded: results.succeeded.length,

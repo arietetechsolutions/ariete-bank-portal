@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
+import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
+import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -12,7 +14,9 @@ serve(async (req) => {
     const auth = await authenticateRequest(req, { requireAdmin: true });
     if (!auth.success) return auth.response;
 
-    const { supabase, user } = auth.context;
+    const { supabase, user, userEmail } = auth.context;
+    const adminAuditTableId = getTableIds().adminAuditLog;
+    const airtableConfig = getAirtableConfig();
 
     const rateLimit = await checkRateLimit(`delete-user:${user.id}`, 10, 60);
     if (!rateLimit.allowed) return Errors.rateLimitExceeded();
@@ -31,6 +35,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    const { data: targetProfile } = await supabaseAdmin
+      .from('profiles').select('email').eq('id', userId).maybeSingle();
+    const targetEmail = targetProfile?.email || userId;
 
     const { error: roleDeleteError } = await supabase
       .from('user_roles')
@@ -56,6 +64,11 @@ serve(async (req) => {
       console.error('Error deleting auth user:', authDeleteError.message);
       return Errors.serverError('Failed to delete user from authentication');
     }
+
+    logAdminAction(airtableConfig, adminAuditTableId, {
+      action: 'DELETE', performedBy: userEmail, targetEmail,
+      details: `Deleted user ${targetEmail}`, result: 'SUCCESS',
+    });
 
     return successResponse({ success: true, message: 'User deleted successfully' });
   } catch (error) {
