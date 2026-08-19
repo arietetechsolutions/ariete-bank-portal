@@ -12,16 +12,24 @@ export const useMyBank = () => {
   useEffect(() => {
     if (!user) { setBankId(null); setContactName(null); return; }
     let cancelled = false;
-    supabase
-      .from('profiles')
-      .select('bank_id, contact_name')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
+
+    const loadProfile = async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('bank_id, contact_name')
+          .eq('id', user.id)
+          .single();
         if (cancelled) return;
         setBankId(data?.bank_id ?? null);
         setContactName(data?.contact_name ?? null);
-      });
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Failed to load profile bank/name:', err);
+      }
+    };
+
+    loadProfile();
     return () => { cancelled = true; };
   }, [user]);
 

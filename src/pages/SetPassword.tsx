@@ -26,24 +26,29 @@ const SetPassword = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) { setError('Invalid or expired invitation link.'); setIsVerifying(false); return; }
-      if (session) { setIsVerifying(false); return; }
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) { setError('Invalid or expired invitation link.'); return; }
+        if (session) return;
 
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-      const type = hashParams.get('type');
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
 
-      if (accessToken && type === 'invite') {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken, refresh_token: refreshToken || '',
-        });
-        if (sessionError) setError('Failed to verify invitation.');
-      } else {
-        setError('Invalid invitation link.');
+        if (accessToken && type === 'invite') {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken, refresh_token: refreshToken || '',
+          });
+          if (sessionError) setError('Failed to verify invitation.');
+        } else {
+          setError('Invalid invitation link.');
+        }
+      } catch {
+        setError('Something went wrong verifying your invitation. Please try the link again.');
+      } finally {
+        setIsVerifying(false);
       }
-      setIsVerifying(false);
     };
     checkSession();
   }, []);
