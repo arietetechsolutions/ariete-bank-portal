@@ -45,6 +45,25 @@ serve(async (req) => {
     }
 
     if (role) {
+      if (role !== 'admin') {
+        const { data: currentRole } = await supabaseAdmin
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (currentRole?.role === 'admin') {
+          const { count: adminCount } = await supabaseAdmin
+            .from('user_roles')
+            .select('id', { count: 'exact', head: true })
+            .eq('role', 'admin');
+
+          if ((adminCount ?? 0) <= 1) {
+            return Errors.badRequest('Cannot remove the last admin. Promote another user to admin first.');
+          }
+        }
+      }
+
       const { error: deleteRoleError } = await supabaseAdmin
         .from('user_roles')
         .delete()
