@@ -37,8 +37,8 @@ Copy `.env.local` and `supabase/.env.local` from the values printed by `npx supa
 
 | Role | Email | Password |
 |---|---|---|
-| admin | `test-admin@arietecapital.test` | `TestAdmin123!` |
-| bank_staff | `test-bankstaff@gcpartners.test` | `TestStaff123!` |
+| admin | `admin@arietecapital.com` | `TestAdmin123!` |
+| bank_staff | `james@gcpartners.com` | `TestStaff123!` |
 
 The bank_staff account's `bank_id` is set to a real GC Partners Banks record ID, so it shows live account data out of the box.
 
