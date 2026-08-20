@@ -3,7 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders, fetchAllAuthUsers } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
-import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchRecord, AIRTABLE_RECORD_ID_REGEX } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 const bulkInviteSchema = z.object({
@@ -11,7 +11,7 @@ const bulkInviteSchema = z.object({
     email: z.string().trim().email("Invalid email format").max(255),
     contactName: z.string().trim().min(1, "Contact name is required").max(100),
   })).min(1, "At least one entry is required").max(50, "Maximum 50 entries per batch"),
-  bankId: z.string().trim().min(1, "Bank is required").max(100),
+  bankId: z.string().trim().regex(AIRTABLE_RECORD_ID_REGEX, "Invalid bank ID"),
   role: z.enum(['admin', 'bank_staff']).default('bank_staff'),
 });
 
@@ -60,6 +60,9 @@ serve(async (req) => {
       console.error('SITE_URL environment variable is not set');
       return Errors.serverError('Server configuration error');
     }
+
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) return Errors.configError('Email service not configured');
 
     const results: { succeeded: string[]; failed: { email: string; error: string }[] } = {
       succeeded: [],
@@ -111,20 +114,25 @@ serve(async (req) => {
 
           results.succeeded.push(trimmedEmail);
         } else {
-          const inviteResponse = await fetch(
-            `${getSupabaseUrl()}/auth/v1/invite`,
-            {
-              method: 'POST',
-              headers: getServiceRoleHeaders(),
-              body: JSON.stringify({
-                email: trimmedEmail,
-                data: { contact_name: contactName, bank_id: bankId },
-              }),
-            }
-          );
+          // Previously called GoTrue's built-in /auth/v1/invite endpoint,
+          // which sends through Supabase's own default mailer rather than
+          // the Resend-branded template invite-user uses - on a hosted
+          // project without custom SMTP configured, that default mailer is
+          // Supabase's shared test SMTP, which is explicitly not meant for
+          // production sending and is rate-limited far below what a 50-entry
+          // batch needs. Matching invite-user's generate_link + Resend
+          // pattern instead so bulk invites actually get delivered.
+          const generateLinkResponse = await fetch(`${getSupabaseUrl()}/auth/v1/admin/generate_link`, {
+            method: 'POST',
+            headers: getServiceRoleHeaders(),
+            body: JSON.stringify({
+              type: 'invite', email: trimmedEmail,
+              options: { redirect_to: `${siteUrl}/set-password`, data: { contact_name: contactName, bank_id: bankId } },
+            }),
+          });
 
-          if (!inviteResponse.ok) {
-            const errorText = await inviteResponse.text();
+          if (!generateLinkResponse.ok) {
+            const errorText = await generateLinkResponse.text();
             console.error(`Error inviting ${trimmedEmail}:`, errorText);
             let detail = 'Failed to send invitation';
             try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
@@ -132,11 +140,29 @@ serve(async (req) => {
             continue;
           }
 
-          const inviteData = await inviteResponse.json();
-          const newUserId = inviteData.id;
+          const generateLinkData = await generateLinkResponse.json();
+          const newUserId = generateLinkData.id;
+          const actionLink = generateLinkData.action_link;
+
+          const emailResponse = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'Ariete Capital <noreply@arietecapital.com>',
+              to: [trimmedEmail],
+              template: { id: Deno.env.get('RESEND_TEMPLATE_INVITE')!, variables: { bankportaluser: contactName, actionlink: actionLink } },
+            }),
+          });
+
+          if (!emailResponse.ok) {
+            const errorText = await emailResponse.text();
+            console.error(`Error sending invite email to ${trimmedEmail}:`, errorText);
+            results.failed.push({ email: trimmedEmail, error: 'Invite created but failed to send email' });
+            continue;
+          }
 
           if (newUserId) {
-            await supabaseAdmin
+            const { error: profileWriteError } = await supabaseAdmin
               .from('profiles')
               .upsert({
                 id: newUserId,
@@ -146,13 +172,19 @@ serve(async (req) => {
                 updated_at: new Date().toISOString(),
               }, { onConflict: 'id' });
 
+            if (profileWriteError) {
+              console.error(`Error writing profile for ${trimmedEmail}:`, profileWriteError.message);
+              results.failed.push({ email: trimmedEmail, error: 'Invite sent but failed to save profile' });
+              continue;
+            }
+
             const { error: insertRoleError } = await supabaseAdmin
               .from('user_roles')
               .insert({ user_id: newUserId, role });
 
             if (insertRoleError) {
               console.error(`Error inserting role for ${trimmedEmail}:`, insertRoleError.message);
-              results.failed.push({ email: trimmedEmail, error: 'Failed to assign role' });
+              results.failed.push({ email: trimmedEmail, error: 'Invite sent but failed to assign role' });
               continue;
             }
           }

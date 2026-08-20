@@ -1,8 +1,8 @@
 project_id = "ariete-bank-portal"
 
 [auth]
-site_url = "http://localhost:8080"
-additional_redirect_urls = ["http://localhost:8080/set-password", "http://127.0.0.1:8080/set-password"]
+site_url = "https://ariete-bank-portal.vercel.app"
+additional_redirect_urls = ["http://localhost:8080/set-password", "http://127.0.0.1:8080/set-password", "https://ariete-bank-portal.vercel.app/set-password", "https://ariete-bank-portal.vercel.app/**"]
 # Access tokens are stateless JWTs with no server-side revocation list, so
 # signOut() only revokes the refresh token - a copied/exfiltrated access
 # token keeps working against every edge function until it expires on its

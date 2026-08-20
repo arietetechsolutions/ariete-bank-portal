@@ -1,3 +1,15 @@
+// Real Airtable record IDs are always "rec" + 14 alphanumeric chars. Record
+// IDs reach these functions from client-supplied fields (bankId,
+// bankAccountId) that were previously validated only as "non-empty string
+// up to N chars" - nothing stopped a value like "recXXX/../otherTableId/rec"
+// from being submitted. fetchRecord/updateRecord below interpolate recordId
+// into the URL path unescaped, so an unvalidated value could traverse to a
+// different table in the same Airtable base (which, per this base's schema,
+// includes Registry/Clients/Leads - well beyond what Bank Accounts access
+// should expose). Export this so every call site validates client-supplied
+// IDs with it before they ever reach fetchRecord/updateRecord.
+export const AIRTABLE_RECORD_ID_REGEX = /^rec[a-zA-Z0-9]{14}$/;
+
 export interface AirtableConfig { apiKey: string; baseId: string; }
 export interface AirtableRecord { id: string; createdTime: string; fields: Record<string, unknown>; }
 export interface FetchOptions {
@@ -65,7 +77,7 @@ export async function fetchRecord(
   config: AirtableConfig, tableId: string, recordId: string
 ): Promise<{ success: true; record: AirtableRecord } | { success: false; error: string }> {
   const { apiKey, baseId } = config;
-  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableId)}/${recordId}`;
+  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableId)}/${encodeURIComponent(recordId)}`;
   const response = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
   if (!response.ok) {
     return { success: false, error: response.status === 404 ? 'Record not found' : `Airtable API error: ${response.status}` };
@@ -93,7 +105,7 @@ export async function updateRecord(
   config: AirtableConfig, tableId: string, recordId: string, fields: Record<string, unknown>
 ): Promise<{ success: true; record: AirtableRecord } | { success: false; error: string }> {
   const { apiKey, baseId } = config;
-  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableId)}/${recordId}`;
+  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableId)}/${encodeURIComponent(recordId)}`;
   const response = await fetch(url, {
     method: 'PATCH',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },

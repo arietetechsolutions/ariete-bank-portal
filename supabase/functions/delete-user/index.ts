@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
+
+const deleteUserSchema = z.object({ userId: z.string().uuid("Invalid user ID") });
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -20,11 +23,13 @@ serve(async (req) => {
     const rateLimit = await checkRateLimit(`delete-user:${user.id}`, 10, 60);
     if (!rateLimit.allowed) return Errors.rateLimitExceeded();
 
-    const body = await parseJsonBody<{ userId: string }>(req);
+    const body = await parseJsonBody<z.infer<typeof deleteUserSchema>>(req);
     if (!body.success) return body.response;
 
-    const { userId } = body.data;
-    if (!userId) return Errors.badRequest('User ID is required');
+    const validation = deleteUserSchema.safeParse(body.data);
+    if (!validation.success) return Errors.badRequest('Invalid input data');
+
+    const { userId } = validation.data;
 
     if (userId === user.id) {
       return Errors.badRequest('Cannot delete your own account');

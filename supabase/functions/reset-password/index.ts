@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
-interface ResetPasswordBody {
-  userId: string;
-}
+const resetPasswordSchema = z.object({ userId: z.string().uuid("Invalid user ID") });
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -26,16 +25,16 @@ serve(async (req) => {
       return Errors.rateLimitExceeded();
     }
 
-    const body = await parseJsonBody<ResetPasswordBody>(req);
+    const body = await parseJsonBody<z.infer<typeof resetPasswordSchema>>(req);
     if (!body.success) return body.response;
 
-    const { userId } = body.data;
-    if (!userId) {
-      return Errors.badRequest('User ID is required');
-    }
+    const validation = resetPasswordSchema.safeParse(body.data);
+    if (!validation.success) return Errors.badRequest('Invalid input data');
+
+    const { userId } = validation.data;
 
     const getUserResponse = await fetch(
-      `${getSupabaseUrl()}/auth/v1/admin/users/${userId}`,
+      `${getSupabaseUrl()}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
       { headers: getServiceRoleHeaders() }
     );
 

@@ -3,7 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
-import { getAirtableConfig, getTableIds, fetchRecord } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchRecord, AIRTABLE_RECORD_ID_REGEX } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 
 const updateUserSchema = z.object({
@@ -11,8 +11,9 @@ const updateUserSchema = z.object({
   role: z.enum(['admin', 'bank_staff']).optional(),
   // Empty string means "clear the bank assignment" - the edit-user dialog
   // always sends bank_id (falling back to '' when it's currently unset), so
-  // this can't require min(1) the way invite/bulk-invite's bankId can.
-  bankId: z.string().trim().max(100).optional(),
+  // this can't require the regex match the way invite/bulk-invite's bankId
+  // can - only enforce the record-ID shape when a real value is given.
+  bankId: z.union([z.literal(''), z.string().trim().regex(AIRTABLE_RECORD_ID_REGEX, "Invalid bank ID")]).optional(),
 });
 
 serve(async (req) => {

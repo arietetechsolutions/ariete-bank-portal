@@ -16,3 +16,5 @@ npm-debug.log*
 # Claude Code / Superpowers internal tooling state - not project content
 .superpowers/
 .claude/settings.local.json
+.vercel
+.env*

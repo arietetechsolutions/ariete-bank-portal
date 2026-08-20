@@ -2,12 +2,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { authenticateRequest } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
-import { getAirtableConfig, getTableIds, fetchRecord, updateRecord, createRecord } from "../_shared/airtable-fetcher.ts";
+import { getAirtableConfig, getTableIds, fetchRecord, updateRecord, createRecord, AIRTABLE_RECORD_ID_REGEX } from "../_shared/airtable-fetcher.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { backgroundTask } from "../_shared/admin-audit-logger.ts";
 
 const updateSchema = z.object({
-  bankAccountId: z.string().min(1, "Bank account ID is required"),
+  // Any authenticated bank_staff can call this (not just admins), so this
+  // is the highest-exposure record-ID input in the app - unvalidated, it
+  // would have let a client-controlled string reach fetchRecord/updateRecord
+  // unescaped.
+  bankAccountId: z.string().trim().regex(AIRTABLE_RECORD_ID_REGEX, "Invalid bank account ID"),
   newStatus: z.enum([
     'Onboarding',
     'Account Opened',
