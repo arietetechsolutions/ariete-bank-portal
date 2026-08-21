@@ -27,10 +27,10 @@ const SetPassword = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) { setError('Invalid or expired invitation link.'); return; }
-        if (session) return;
-
+        // A token in the URL always wins over whatever session is already
+        // cached - otherwise opening someone else's invite/recovery link in
+        // a browser where you're already logged in silently keeps you
+        // signed in as yourself instead of switching to the invited account.
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
@@ -41,9 +41,14 @@ const SetPassword = () => {
             access_token: accessToken, refresh_token: refreshToken || '',
           });
           if (sessionError) setError('Failed to verify invitation.');
-        } else {
-          setError('Invalid invitation link.');
+          return;
         }
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) { setError('Invalid or expired invitation link.'); return; }
+        if (session) return;
+
+        setError('Invalid invitation link.');
       } catch {
         setError('Something went wrong verifying your invitation. Please try the link again.');
       } finally {
