@@ -36,7 +36,7 @@ const SetPassword = () => {
         const refreshToken = hashParams.get('refresh_token');
         const type = hashParams.get('type');
 
-        if (accessToken && type === 'invite') {
+        if (accessToken && (type === 'invite' || type === 'recovery' || type === 'signup')) {
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken, refresh_token: refreshToken || '',
           });
