@@ -9,8 +9,11 @@ import { logAdminAction } from "../_shared/admin-audit-logger.ts";
 const inviteSchema = z.object({
   email: z.string().trim().email("Invalid email format").max(255),
   contactName: z.string().trim().min(1, "Contact name is required").max(100),
-  bankId: z.string().trim().regex(AIRTABLE_RECORD_ID_REGEX, "Invalid bank ID"),
+  bankId: z.string().trim().regex(AIRTABLE_RECORD_ID_REGEX, "Invalid bank ID").optional(),
   role: z.enum(['admin', 'bank_staff']).default('bank_staff'),
+}).refine((data) => data.role === 'admin' || !!data.bankId, {
+  message: 'Bank is required for bank staff',
+  path: ['bankId'],
 });
 
 serve(async (req) => {
@@ -34,12 +37,15 @@ serve(async (req) => {
     const validation = inviteSchema.safeParse(body.data);
     if (!validation.success) return Errors.badRequest('Invalid input data');
 
-    const { email, contactName, bankId, role } = validation.data;
+    const { email, contactName, role } = validation.data;
+    const bankId = role === 'admin' ? null : validation.data.bankId!;
 
-    const banksTableId = getTableIds().banks;
-    if (!airtableConfig || !banksTableId) return Errors.configError('Banks table not configured');
-    const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
-    if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
+    if (bankId) {
+      const banksTableId = getTableIds().banks;
+      if (!airtableConfig || !banksTableId) return Errors.configError('Banks table not configured');
+      const bankCheck = await fetchRecord(airtableConfig, banksTableId, bankId);
+      if (!bankCheck.success) return Errors.badRequest('Invalid bank ID');
+    }
 
     const supabaseAdmin = createAdminClient();
 

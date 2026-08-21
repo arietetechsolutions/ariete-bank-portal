@@ -23,7 +23,7 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !contactName || !bankId) { toast.error('Please fill in all required fields'); return; }
+    if (!email || !contactName || (role === 'bank_staff' && !bankId)) { toast.error('Please fill in all required fields'); return; }
 
     setIsLoading(true);
     try {
@@ -32,7 +32,7 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
 
       const response = await supabase.functions.invoke('invite-user', {
         headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
-        body: { email, contactName, bankId, role },
+        body: { email, contactName, bankId: role === 'admin' ? undefined : bankId, role },
       });
 
       if (response.error) throw new Error(response.error.message);
@@ -71,15 +71,6 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
               <Input id="contactName" type="text" placeholder="Jane Doe" value={contactName} onChange={(e) => setContactName(e.target.value)} required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="bank">Bank *</Label>
-              <Select value={bankId} onValueChange={setBankId} required>
-                <SelectTrigger><SelectValue placeholder="Select a bank" /></SelectTrigger>
-                <SelectContent>
-                  {banks.map((bank) => <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="role"><Shield className="w-4 h-4 inline mr-2" />Role</Label>
               <Select value={role} onValueChange={(v: 'admin' | 'bank_staff') => setRole(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -89,6 +80,17 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
                 </SelectContent>
               </Select>
             </div>
+            {role === 'bank_staff' && (
+              <div className="grid gap-2">
+                <Label htmlFor="bank">Bank *</Label>
+                <Select value={bankId} onValueChange={setBankId} required>
+                  <SelectTrigger><SelectValue placeholder="Select a bank" /></SelectTrigger>
+                  <SelectContent>
+                    {banks.map((bank) => <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
