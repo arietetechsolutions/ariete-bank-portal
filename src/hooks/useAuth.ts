@@ -16,9 +16,27 @@ export const useAuth = () => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // getSession() only reads the token cached in localStorage - it never
+    // confirms the account still exists. A deleted user's not-yet-expired
+    // access token would otherwise keep rendering the app shell (edge
+    // functions reject it via their own getUser() check, but the frontend
+    // gate never asked). getUser() round-trips to the Auth server and fails
+    // the moment the account is gone, so we drop the stale session locally
+    // instead of trusting it.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { setSession(null); setUser(null); setLoading(false); return; }
+
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser(user);
       setLoading(false);
     });
 
