@@ -29,6 +29,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { getFunctionErrorMessage } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import { EditUserDialog } from './EditUserDialog';
 import { DeleteUserDialog } from './DeleteUserDialog';
 import {
@@ -53,6 +54,7 @@ type SortField = 'bank' | 'created_at' | 'last_sign_in_at';
 type SortDirection = 'asc' | 'desc';
 
 export const UsersTable = ({ users, banks, onRefresh }: UsersTableProps) => {
+  const { user: currentUser } = useAuth();
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserProfile | null>(null);
   const [resendingUserId, setResendingUserId] = useState<string | null>(null);
@@ -342,7 +344,9 @@ export const UsersTable = ({ users, banks, onRefresh }: UsersTableProps) => {
                         )}
                         <DropdownMenuItem
                           onClick={() => setDeletingUser(user)}
-                          className="text-destructive hover:bg-destructive/10 cursor-pointer"
+                          disabled={user.id === currentUser?.id}
+                          title={user.id === currentUser?.id ? "You can't delete your own account" : undefined}
+                          className="text-destructive hover:bg-destructive/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
