@@ -37,18 +37,16 @@ serve(async (req) => {
     }
 
     const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
-    // Admins need to see and manage each other (e.g. removing a stray
-    // duplicate invite), just not themselves - self-delete is already
-    // blocked server-side, so excluding your own row here is purely to
-    // keep the list free of an entry you can't act on anyway.
+    // Every admin (including the caller) shows up here - self-delete is
+    // still blocked server-side regardless, so there's no harm in the
+    // caller seeing their own row.
     const users = (profiles || [])
       .map(profile => ({
         ...profile,
         role: rolesMap.get(profile.id) || 'bank_staff',
         last_sign_in_at: lastSignInMap.get(profile.id) || null,
         email_confirmed_at: emailConfirmedMap.get(profile.id) || null,
-      }))
-      .filter(profile => profile.id !== auth.context.user.id);
+      }));
 
     return successResponse({ users });
   } catch (error) {
