@@ -78,41 +78,16 @@ serve(async (req) => {
         const existingUser = existingUsersMap.get(trimmedEmail);
 
         if (existingUser) {
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .upsert({
-              id: existingUser.id,
-              email: trimmedEmail,
-              contact_name: contactName,
-              bank_id: bankId,
-              updated_at: new Date().toISOString(),
-            });
-
-          if (updateError) {
-            console.error(`Error updating profile for ${trimmedEmail}:`, updateError.message);
-            results.failed.push({ email: trimmedEmail, error: 'Failed to update profile' });
-            continue;
-          }
-
-          const { data: existingRole } = await supabaseAdmin
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', existingUser.id)
-            .maybeSingle();
-
-          if (!existingRole) {
-            const { error: insertRoleError } = await supabaseAdmin
-              .from('user_roles')
-              .insert({ user_id: existingUser.id, role });
-
-            if (insertRoleError) {
-              console.error(`Error inserting role for ${trimmedEmail}:`, insertRoleError.message);
-              results.failed.push({ email: trimmedEmail, error: 'Failed to assign role' });
-              continue;
-            }
-          }
-
-          results.succeeded.push(trimmedEmail);
+          // Same reasoning as invite-user: silently upserting an existing
+          // profile here sent no email at all but still counted the row as
+          // "succeeded" in the batch summary, so an admin bulk-inviting a
+          // list with a few already-registered addresses on it had no way
+          // to tell those apart from ones that actually got an email.
+          results.failed.push({
+            email: trimmedEmail,
+            error: 'Already has an account - no email sent. Use Resend Invite or Reset Password from the Users table instead.',
+          });
+          continue;
         } else {
           // Previously called GoTrue's built-in /auth/v1/invite endpoint,
           // which sends through Supabase's own default mailer rather than

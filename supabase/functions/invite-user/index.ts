@@ -52,24 +52,18 @@ serve(async (req) => {
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles').select('id, email').eq('email', email).maybeSingle();
 
+    // This used to silently upsert the existing profile and report success -
+    // no email ever went out, but the admin saw the same "success" toast as
+    // a real invite, with no way to tell the difference. An admin clicking
+    // "Invite" for an email that already has an account almost always means
+    // they don't realize it already exists; failing loudly here and pointing
+    // at the actions that actually send something (Resend Invite for an
+    // unconfirmed account, Reset Password for a confirmed one) or Edit (for
+    // just changing bank/role) is far less surprising than a no-op success.
     if (existingProfile) {
-      const { error: updateError } = await supabaseAdmin.from('profiles').upsert({
-        id: existingProfile.id, email, contact_name: contactName, bank_id: bankId, updated_at: new Date().toISOString(),
-      });
-      if (updateError) return Errors.serverError('Failed to update user profile');
-
-      const { data: existingRole } = await supabaseAdmin
-        .from('user_roles').select('role').eq('user_id', existingProfile.id).maybeSingle();
-      if (!existingRole) {
-        await supabaseAdmin.from('user_roles').insert({ user_id: existingProfile.id, role });
-      }
-
-      logAdminAction(airtableConfig, adminAuditTableId, {
-        action: 'INVITE', performedBy: userEmail, targetEmail: email,
-        details: `Updated existing profile for ${email} (bank_id: ${bankId}, role: ${role})`, result: 'SUCCESS',
-      });
-
-      return successResponse({ message: 'User profile updated successfully', userId: existingProfile.id });
+      return Errors.badRequest(
+        `${email} already has an account. No invitation email was sent - use "Resend Invite" or "Reset Password" from the Users table instead (whichever is offered depends on whether they've confirmed their account yet), or "Edit" to change their bank/role.`
+      );
     }
 
     const siteUrl = Deno.env.get('SITE_URL');
