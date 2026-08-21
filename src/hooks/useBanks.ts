@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getFunctionErrorMessage } from '@/lib/utils';
 
 export interface Bank { id: string; name: string; }
 
@@ -18,7 +19,7 @@ export const useBanks = () => {
       const response = await supabase.functions.invoke('get-banks', {
         headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
       });
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error));
       setBanks(response.data.banks || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch banks');

@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/hooks/useUsers';
+import { getFunctionErrorMessage } from '@/lib/utils';
 
 interface DeleteUserDialogProps {
   user: UserProfile;
@@ -42,7 +43,7 @@ export const DeleteUserDialog = ({ user, open, onOpenChange, onSuccess }: Delete
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(await getFunctionErrorMessage(response.error));
       }
 
       if (response.data.error) {

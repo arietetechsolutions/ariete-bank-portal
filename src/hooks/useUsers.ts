@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getFunctionErrorMessage } from '@/lib/utils';
 
 export interface UserProfile {
   id: string;
@@ -28,7 +29,7 @@ export const useUsers = () => {
       const response = await supabase.functions.invoke('get-users', {
         headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
       });
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error));
       setUsers(response.data.users || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch users');

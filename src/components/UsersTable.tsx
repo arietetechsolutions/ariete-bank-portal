@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getFunctionErrorMessage } from '@/lib/utils';
 import { EditUserDialog } from './EditUserDialog';
 import { DeleteUserDialog } from './DeleteUserDialog';
 import {
@@ -87,7 +88,7 @@ export const UsersTable = ({ users, banks, onRefresh }: UsersTableProps) => {
         body: { userId },
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error));
       if (response.data.error) throw new Error(response.data.error);
 
       toast.success(response.data.message || 'Invitation resent successfully');
@@ -106,7 +107,7 @@ export const UsersTable = ({ users, banks, onRefresh }: UsersTableProps) => {
         body: { userId },
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error));
       if (response.data.error) throw new Error(response.data.error);
 
       toast.success(response.data.message || 'Password reset email sent successfully');

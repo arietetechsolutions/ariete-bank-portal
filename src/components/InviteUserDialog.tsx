@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Bank } from '@/hooks/useBanks';
+import { getFunctionErrorMessage } from '@/lib/utils';
 
 interface InviteUserDialogProps { banks: Bank[]; onSuccess: () => void; }
 
@@ -35,7 +36,7 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
         body: { email, contactName, bankId: role === 'admin' ? undefined : bankId, role },
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error));
       if (response.data.error) throw new Error(response.data.error);
 
       toast.success(response.data.message || 'Invitation sent successfully');

@@ -19,6 +19,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getFunctionErrorMessage } from '@/lib/utils';
 import { Bank } from '@/hooks/useBanks';
 import { UserProfile } from '@/hooks/useUsers';
 
@@ -62,7 +63,7 @@ export const EditUserDialog = ({ user, banks, open, onOpenChange, onSuccess }: E
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(await getFunctionErrorMessage(response.error));
       }
 
       if (response.data.error) {

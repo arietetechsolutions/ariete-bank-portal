@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getFunctionErrorMessage } from '@/lib/utils';
 import { Bank } from '@/hooks/useBanks';
 
 interface BulkInviteDialogProps {
@@ -105,7 +106,7 @@ export const BulkInviteDialog = ({ banks, onSuccess }: BulkInviteDialogProps) =>
         },
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error));
       if (response.data.error) throw new Error(response.data.error);
 
       const bulkResult: BulkResult = {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getFunctionErrorMessage } from '@/lib/utils';
 import { toast } from 'sonner';
 import { BankAccountStatus } from '@/types/bankAccount';
 
@@ -15,7 +16,7 @@ export const useUpdateBankAccountStatus = () => {
       });
 
       if (error) {
-        toast.error('Failed to update status');
+        toast.error(await getFunctionErrorMessage(error, 'Failed to update status'));
         return false;
       }
       if (!data?.success) {
