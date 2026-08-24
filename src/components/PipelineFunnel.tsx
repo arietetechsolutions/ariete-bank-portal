@@ -90,7 +90,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
               )}
             >
               <div className="flex items-start gap-1.5">
-                <span className="font-mono text-[11px] font-medium leading-[1.4] text-dim">{s.num}</span>
+                <span className="font-mono text-[12px] font-medium leading-[1.4] text-dim">{s.num}</span>
                 <span className="min-h-[34px] text-[12px] leading-[1.4] text-muted-foreground">
                   {STAGE_SHORT_LABELS[s.status]}
                 </span>
@@ -108,7 +108,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
                 <div className={cn('h-1 rounded-sm', TONE_BAR[tone])} style={{ width: `${s.barPct}%` }} />
               </div>
               <div className={cn(
-                'font-mono text-[11.5px] font-medium',
+                'font-mono text-[12px] font-medium',
                 isDormant ? 'text-dormant'
                   : s.medianDays === null ? 'text-subtle'
                   : s.medianDays >= 15 ? 'text-stall-foreground'
@@ -138,7 +138,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
       >
         <div className="min-h-[34px] text-[12px] text-lost-foreground">Lost · terminal</div>
         <div className="font-mono text-[32px] leading-none text-lost-foreground">{lostCount}</div>
-        <div className="font-mono text-[11.5px] font-medium text-subtle">{lostRatePct}% of all records</div>
+        <div className="font-mono text-[12px] font-medium text-subtle">{lostRatePct}% of all records</div>
       </button>
     </div>
   );
