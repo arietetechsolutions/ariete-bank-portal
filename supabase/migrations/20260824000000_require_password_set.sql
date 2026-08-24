@@ -22,6 +22,12 @@
 -- inside the signed JWT, so the gate cannot be forged client-side and costs
 -- no extra round trip to check.
 --
+-- The function lives in public, not auth: hosted Supabase revokes DDL rights
+-- on the auth schema even from the postgres role, so `CREATE FUNCTION
+-- auth.<name>` fails with "permission denied for schema auth". Attaching a
+-- trigger to auth.users is still permitted, and so is updating it - only
+-- creating objects inside that schema is not.
+--
 -- Maintained by trigger rather than by application code on purpose. Every
 -- path that can create a user or set a password - invite-user, bulk-invite,
 -- the set-password function, an admin using Supabase Studio, a raw admin API
@@ -29,10 +35,10 @@
 -- that forgets fails OPEN. Deriving it from encrypted_password means the
 -- mirror cannot drift and no future call site has to know the rule exists.
 
-CREATE OR REPLACE FUNCTION auth.sync_password_set_flag()
+CREATE OR REPLACE FUNCTION public.sync_password_set_flag()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = auth, public
+SECURITY DEFINER SET search_path = public, auth
 AS $$
 BEGIN
   NEW.raw_app_meta_data =
@@ -48,10 +54,23 @@ $$;
 -- BEFORE INSERT: every newly created account starts with the flag present and
 -- honest. A brand-new invitee has no password, so it lands false - the gate
 -- fails CLOSED for anyone the app has not explicitly seen set a password.
+--
+-- Known edge, measured against the live project: the three creation routes
+-- leave different things behind.
+--   generate_link type=invite  -> encrypted_password = '' (empty, len 0) -> false
+--   admin create WITH password -> bcrypt hash                            -> true
+--   admin create, NO password  -> a RANDOM bcrypt hash                   -> true
+-- The last one reads as "has a password" because GoTrue invents one, and a
+-- random hash is indistinguishable from a real one at the column level. Such an
+-- account would skip the gate while holding a password nobody knows. It is not
+-- reachable through this app - invite-user and bulk-invite both go through
+-- generate_link - so it is documented rather than worked around. Anything that
+-- starts creating users through POST /admin/users without a password needs to
+-- set password_set = false itself.
 DROP TRIGGER IF EXISTS sync_password_set_flag_on_insert ON auth.users;
 CREATE TRIGGER sync_password_set_flag_on_insert
   BEFORE INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION auth.sync_password_set_flag();
+  FOR EACH ROW EXECUTE FUNCTION public.sync_password_set_flag();
 
 -- BEFORE UPDATE, but only when the password actually changes. Restricting it
 -- to that column keeps the flag from being recomputed on unrelated writes
@@ -62,7 +81,7 @@ CREATE TRIGGER sync_password_set_flag_on_update
   BEFORE UPDATE OF encrypted_password ON auth.users
   FOR EACH ROW
   WHEN (NEW.encrypted_password IS DISTINCT FROM OLD.encrypted_password)
-  EXECUTE FUNCTION auth.sync_password_set_flag();
+  EXECUTE FUNCTION public.sync_password_set_flag();
 
 -- Backfill every account that already exists. This MUST land before the
 -- enforcement in authenticateRequest ships: without it every current user
