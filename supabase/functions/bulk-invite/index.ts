@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders, fetchAllAuthUsers } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient, fetchAllAuthUsers } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds, fetchRecord, AIRTABLE_RECORD_ID_REGEX } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
+import { generateActionLink } from "../_shared/action-link.ts";
 
 const bulkInviteSchema = z.object({
   entries: z.array(z.object({
@@ -97,27 +98,18 @@ serve(async (req) => {
           // production sending and is rate-limited far below what a 50-entry
           // batch needs. Matching invite-user's generate_link + Resend
           // pattern instead so bulk invites actually get delivered.
-          const generateLinkResponse = await fetch(`${getSupabaseUrl()}/auth/v1/admin/generate_link`, {
-            method: 'POST',
-            headers: getServiceRoleHeaders(),
-            body: JSON.stringify({
-              type: 'invite', email: trimmedEmail,
-              options: { redirect_to: `${siteUrl}/set-password`, data: { contact_name: contactName, bank_id: bankId } },
-            }),
+          const linkResult = await generateActionLink({
+            type: 'invite', email: trimmedEmail, redirectTo: `${siteUrl}/set-password`,
+            data: { contact_name: contactName, bank_id: bankId },
           });
 
-          if (!generateLinkResponse.ok) {
-            const errorText = await generateLinkResponse.text();
-            console.error(`Error inviting ${trimmedEmail}:`, errorText);
-            let detail = 'Failed to send invitation';
-            try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
-            results.failed.push({ email: trimmedEmail, error: detail });
+          if (!linkResult.success) {
+            results.failed.push({ email: trimmedEmail, error: linkResult.detail || 'Failed to send invitation' });
             continue;
           }
 
-          const generateLinkData = await generateLinkResponse.json();
-          const newUserId = generateLinkData.id;
-          const actionLink = generateLinkData.action_link;
+          const newUserId = linkResult.userId;
+          const actionLink = linkResult.actionLink;
 
           const emailResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',

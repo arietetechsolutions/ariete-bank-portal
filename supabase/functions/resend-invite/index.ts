@@ -5,6 +5,7 @@ import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/r
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
+import { generateActionLink } from "../_shared/action-link.ts";
 
 const resendInviteSchema = z.object({ userId: z.string().uuid("Invalid user ID") });
 
@@ -61,34 +62,21 @@ serve(async (req) => {
     }
 
     // Using 'magiclink' type because 'invite' fails with "email_exists" for already-invited users
-    const generateLinkResponse = await fetch(
-      `${getSupabaseUrl()}/auth/v1/admin/generate_link`,
-      {
-        method: 'POST',
-        headers: getServiceRoleHeaders(),
-        body: JSON.stringify({
-          type: 'magiclink',
-          email: targetEmail,
-          options: {
-            redirect_to: `${siteUrl}/set-password`,
-            data: targetUser.user_metadata || {},
-          },
-        }),
-      }
-    );
+    const linkResult = await generateActionLink({
+      type: 'magiclink',
+      email: targetEmail,
+      redirectTo: `${siteUrl}/set-password`,
+      data: targetUser.user_metadata || {},
+    });
 
-    if (!generateLinkResponse.ok) {
-      const errorText = await generateLinkResponse.text();
-      console.error(`Error generating invite link (${generateLinkResponse.status}):`, errorText);
-      if (generateLinkResponse.status >= 400 && generateLinkResponse.status < 500) {
-        let detail = 'Invite failed';
-        try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
-        return Errors.badRequest(detail);
+    if (!linkResult.success) {
+      if (linkResult.status >= 400 && linkResult.status < 500) {
+        return Errors.badRequest(linkResult.detail || 'Invite failed');
       }
       return Errors.serverError('Invite failed: unexpected server error');
     }
 
-    const { action_link } = await generateLinkResponse.json();
+    const action_link = linkResult.actionLink;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {

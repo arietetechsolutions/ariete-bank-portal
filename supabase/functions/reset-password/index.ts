@@ -5,6 +5,7 @@ import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/r
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
+import { generateActionLink } from "../_shared/action-link.ts";
 
 const resetPasswordSchema = z.object({ userId: z.string().uuid("Invalid user ID") });
 
@@ -56,33 +57,20 @@ serve(async (req) => {
       return Errors.serverError('Server configuration error');
     }
 
-    const generateLinkResponse = await fetch(
-      `${getSupabaseUrl()}/auth/v1/admin/generate_link`,
-      {
-        method: 'POST',
-        headers: getServiceRoleHeaders(),
-        body: JSON.stringify({
-          type: 'recovery',
-          email: targetEmail,
-          options: {
-            redirect_to: `${siteUrl}/set-password`,
-          },
-        }),
-      }
-    );
+    const linkResult = await generateActionLink({
+      type: 'recovery',
+      email: targetEmail,
+      redirectTo: `${siteUrl}/set-password`,
+    });
 
-    if (!generateLinkResponse.ok) {
-      const errorText = await generateLinkResponse.text();
-      console.error(`Error generating recovery link (${generateLinkResponse.status}):`, errorText);
-      if (generateLinkResponse.status >= 400 && generateLinkResponse.status < 500) {
-        let detail = 'Password reset failed';
-        try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
-        return Errors.badRequest(detail);
+    if (!linkResult.success) {
+      if (linkResult.status >= 400 && linkResult.status < 500) {
+        return Errors.badRequest(linkResult.detail || 'Password reset failed');
       }
       return Errors.serverError('Password reset failed: unexpected server error');
     }
 
-    const { action_link } = await generateLinkResponse.json();
+    const action_link = linkResult.actionLink;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {

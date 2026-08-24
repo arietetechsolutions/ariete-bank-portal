@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { authenticateRequest, createAdminClient, getSupabaseUrl, getServiceRoleHeaders } from "../_shared/auth-handler.ts";
+import { authenticateRequest, createAdminClient } from "../_shared/auth-handler.ts";
 import { handleCors, successResponse, Errors, parseJsonBody } from "../_shared/response-formatter.ts";
 import { checkRateLimit } from "../_shared/rate-limiter.ts";
 import { getAirtableConfig, getTableIds, fetchRecord, AIRTABLE_RECORD_ID_REGEX } from "../_shared/airtable-fetcher.ts";
 import { logAdminAction } from "../_shared/admin-audit-logger.ts";
+import { generateActionLink } from "../_shared/action-link.ts";
 
 const inviteSchema = z.object({
   email: z.string().trim().email("Invalid email format").max(255),
@@ -69,28 +70,20 @@ serve(async (req) => {
     const siteUrl = Deno.env.get('SITE_URL');
     if (!siteUrl) return Errors.serverError('Server configuration error');
 
-    const generateLinkResponse = await fetch(`${getSupabaseUrl()}/auth/v1/admin/generate_link`, {
-      method: 'POST',
-      headers: getServiceRoleHeaders(),
-      body: JSON.stringify({
-        type: 'invite', email,
-        options: { redirect_to: `${siteUrl}/set-password`, data: { contact_name: contactName, bank_id: bankId } },
-      }),
+    const linkResult = await generateActionLink({
+      type: 'invite', email, redirectTo: `${siteUrl}/set-password`,
+      data: { contact_name: contactName, bank_id: bankId },
     });
 
-    if (!generateLinkResponse.ok) {
-      const errorText = await generateLinkResponse.text();
-      if (generateLinkResponse.status >= 400 && generateLinkResponse.status < 500) {
-        let detail = 'Invite failed';
-        try { const parsed = JSON.parse(errorText); detail = parsed.msg || parsed.message || detail; } catch { /* ignore parse error */ }
-        return Errors.badRequest(detail);
+    if (!linkResult.success) {
+      if (linkResult.status >= 400 && linkResult.status < 500) {
+        return Errors.badRequest(linkResult.detail || 'Invite failed');
       }
       return Errors.serverError('Invite failed: unexpected server error');
     }
 
-    const generateLinkData = await generateLinkResponse.json();
-    const invitedUserId = generateLinkData.id;
-    const actionLink = generateLinkData.action_link;
+    const invitedUserId = linkResult.userId;
+    const actionLink = linkResult.actionLink;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) return Errors.configError('Email service not configured');
