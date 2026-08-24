@@ -33,5 +33,9 @@ export interface BankAccountRecord {
   email: string;
   bank_name: string;
   status: BankAccountStatus | '';
+  // Airtable "Status changed on" (a date-only field), or null if never
+  // stamped - e.g. a record whose status has not changed since the
+  // automation was added.
+  status_changed_on: string | null;
   created_at: string;
 }

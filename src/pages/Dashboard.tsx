@@ -14,6 +14,7 @@ import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { useUpdateBankAccountStatus } from '@/hooks/useUpdateBankAccountStatus';
 import { useAdmin } from '@/hooks/useAdmin';
 import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
+import { daysSince, formatDaysSince } from '@/lib/utils';
 
 const STATUS_ICONS: Record<BankAccountStatus, React.ElementType> = {
   'Registered': ClipboardCheck,
@@ -132,6 +133,7 @@ const Dashboard = () => {
                         <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
                         {isAdmin && <TableHead className="text-muted-foreground font-semibold">Bank</TableHead>}
                         <TableHead className="text-muted-foreground font-semibold">Date Added</TableHead>
+                        <TableHead className="text-muted-foreground font-semibold whitespace-nowrap">Days in Status</TableHead>
                         <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -142,6 +144,7 @@ const Dashboard = () => {
                           <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
                           {isAdmin && <TableCell className="text-muted-foreground">{acc.bank_name || '-'}</TableCell>}
                           <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(acc.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}</TableCell>
+                          <TableCell className="text-muted-foreground whitespace-nowrap tabular-nums">{formatDaysSince(daysSince(acc.status_changed_on))}</TableCell>
                           <TableCell>
                             <Select
                               value={acc.status || undefined}

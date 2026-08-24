@@ -61,6 +61,12 @@ serve(async (req) => {
         email,
         bank_name: resolveLookup(bankLinks, bankNameMap),
         status: (fields['Bank account status'] as string) || '',
+        // Maintained inside Airtable (the "Shadow status" automation stamps
+        // it when the select changes), not written by this app. Sent as the
+        // raw date string so the client can count whole days against the
+        // viewer's own clock - a day count computed here would be frozen
+        // into the 30s-cached response and could render as stale.
+        status_changed_on: (fields['Status changed on'] as string) || null,
         created_at: record.createdTime,
         bank_ids: bankLinks,
       };
