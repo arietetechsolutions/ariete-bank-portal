@@ -32,7 +32,7 @@ const isStalled = (acc: BankAccountRecord): boolean => {
 
 const Dashboard = () => {
   const { isAdmin } = useAdmin();
-  const { data: bankAccounts, isLoading, error, refetch, dataUpdatedAt } = useBankAccounts();
+  const { data: bankAccounts, isLoading, error, refetch } = useBankAccounts();
   const { updateStatus, isUpdating } = useUpdateBankAccountStatus();
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; newStatus: BankAccountStatus } | null>(null);
   // null = no filter. Set by clicking a funnel stage or the Lost tile.
@@ -93,10 +93,12 @@ const Dashboard = () => {
                 <h1 className="font-display text-[30px] leading-[1.1] text-foreground">
                   {isAdmin ? 'All clients' : 'Your clients'}
                 </h1>
+                {/* Deliberately just the description. The record count already
+                    sits in the table footer, and a "last updated" clock on a
+                    view that silently refetches every 30s tells staff nothing
+                    they can act on. */}
                 <p className="text-[13.5px] text-stage-neutral">
                   {isAdmin ? 'Every client across both banks' : 'Track and update your clients’ account-opening status'}
-                  {accounts.length > 0 && ` · ${accounts.length} record${accounts.length === 1 ? '' : 's'}`}
-                  {dataUpdatedAt > 0 && ` · updated ${new Date(dataUpdatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
                 </p>
               </div>
             </div>
