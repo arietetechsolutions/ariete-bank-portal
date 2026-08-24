@@ -21,11 +21,16 @@ export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
         const isActive = location.pathname === item.href;
         return (
           <li key={item.label}>
+            {/* Active state is a 2px rust rule plus a wash, not a filled
+                block - the accent is allowed one appearance per view and a
+                solid rust button would spend it on navigation. */}
             <Link to={item.href} onClick={onNavigate} className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              "flex items-center gap-2.5 rounded-sm border-l-2 px-3 py-2.5 text-[13.5px] transition-colors duration-fast",
+              isActive
+                ? "border-primary bg-primary/[0.12] font-semibold text-primary"
+                : "border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
             )}>
-              <item.icon className="w-5 h-5" />
+              <item.icon className="h-4 w-4" />
               {item.label}
             </Link>
           </li>
@@ -37,8 +42,8 @@ export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 const Sidebar = () => {
   return (
-    <aside className="hidden md:flex w-64 min-h-[calc(100vh-73px)] bg-card border-r border-border flex-col">
-      <nav className="flex-1 p-4">
+    <aside className="hidden min-h-[calc(100vh-73px)] w-[236px] flex-none flex-col border-r border-white/[0.06] bg-sidebar md:flex">
+      <nav className="flex-1 px-3 py-6">
         <SidebarNav />
       </nav>
     </aside>

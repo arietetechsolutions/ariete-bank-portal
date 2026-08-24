@@ -66,7 +66,7 @@ export const DeleteUserDialog = ({ user, open, onOpenChange, onSuccess }: Delete
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="bg-card border-border">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-foreground flex items-center gap-2">
+          <AlertDialogTitle className="font-display text-foreground flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-destructive" />
             Delete User
           </AlertDialogTitle>

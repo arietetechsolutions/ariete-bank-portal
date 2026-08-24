@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import arieteLogo from '@/assets/ariete-logo.png';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,11 @@ const Header = () => {
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const firstName = contactName?.trim().split(/\s+/)[0] || user?.email || 'User';
+  const displayName = contactName?.trim() || user?.email || 'User';
+  // Two-letter monogram, mono-spaced - the design system substitutes initial
+  // tiles for headshots rather than inventing photography.
+  const initials = (contactName?.trim() || user?.email || '?')
+    .split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || '?';
 
   const handleLogout = async () => {
     const { error } = await signOut();
@@ -26,7 +30,7 @@ const Header = () => {
   };
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-sidebar">
       <div className="w-full px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -35,7 +39,7 @@ const Header = () => {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-card border-border p-4">
+            <SheetContent side="left" className="w-[236px] border-white/[0.06] bg-sidebar p-3">
               <nav className="mt-8">
                 <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
               </nav>
@@ -44,14 +48,14 @@ const Header = () => {
           <img src={arieteLogo} alt="Ariete Capital" className="h-10 w-auto" />
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-secondary/50">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="text-[13px] text-foreground">{displayName}</span>
+              <span className="text-[11px] uppercase tracking-[0.1em] text-subtle">{isAdmin ? 'Admin' : (bankName || 'Bank staff')}</span>
             </div>
-            <div className="text-sm">
-              <p className="font-medium text-foreground">{firstName}</p>
-              <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : (bankName || 'Bank Staff')}</p>
-            </div>
+            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-sm border border-white/[0.1] bg-secondary font-mono text-[11.5px] text-muted-foreground">
+              {initials}
+            </span>
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />

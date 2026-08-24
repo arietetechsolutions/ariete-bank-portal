@@ -81,17 +81,17 @@ const SetPassword = () => {
   };
 
   if (isVerifying) {
-    return <div className="min-h-screen bg-gradient-hero flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-border bg-card">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center"><img src={arieteLogo} alt="Ariete Capital" className="h-16 w-auto" /></div>
             <div>
-              <CardTitle className="text-2xl font-bold text-foreground">Invitation Error</CardTitle>
+              <CardTitle className="font-display text-2xl font-bold text-foreground">Invitation Error</CardTitle>
               <CardDescription className="text-destructive mt-2">{error}</CardDescription>
             </div>
           </CardHeader>
@@ -103,12 +103,12 @@ const SetPassword = () => {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-border bg-card">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center"><CheckCircle className="w-16 h-16 text-green-500" /></div>
             <div>
-              <CardTitle className="text-2xl font-bold text-foreground">Account Created!</CardTitle>
+              <CardTitle className="font-display text-2xl font-bold text-foreground">Account Created!</CardTitle>
               <CardDescription className="text-muted-foreground">Redirecting to dashboard...</CardDescription>
             </div>
           </CardHeader>
@@ -118,12 +118,12 @@ const SetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center"><img src={arieteLogo} alt="Ariete Capital" className="h-16 w-auto" /></div>
           <div>
-            <CardTitle className="text-2xl font-bold text-foreground">Welcome!</CardTitle>
+            <CardTitle className="font-display text-2xl font-bold text-foreground">Welcome!</CardTitle>
             <CardDescription className="text-muted-foreground">Set your password to complete your account setup</CardDescription>
           </div>
         </CardHeader>

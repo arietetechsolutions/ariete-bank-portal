@@ -52,13 +52,13 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-gold hover:opacity-90 text-primary-foreground">
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <UserPlus className="w-4 h-4 mr-2" />Invite User
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Invite New User</DialogTitle>
+          <DialogTitle className="font-display text-xl">Invite New User</DialogTitle>
           <DialogDescription>Send an email invitation with access credentials.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -95,7 +95,7 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={isLoading} className="bg-gradient-gold hover:opacity-90 text-primary-foreground">
+            <Button type="submit" disabled={isLoading} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {isLoading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending...</>) : (<><Mail className="w-4 h-4 mr-2" />Send Invitation</>)}
             </Button>
           </DialogFooter>

@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+/* Ariete Capital design system — Playfair Display for display/page titles,
+   Montserrat for UI, Fragment Mono for every figure. The mono is not
+   decorative: counts, day tallies and shares are the proof points on this
+   dashboard, and tabular figures stop them jittering as they update. */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Fragment+Mono&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,49 +10,86 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 20% 95%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 20% 95%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 26 82% 52%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 20% 95%;
-    --muted: 222 30% 14%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 26 82% 52%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 20% 98%;
-    --success: 142 76% 36%;
-    --success-foreground: 210 20% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 6%;
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 26 82% 52%;
-    --radius: 0.75rem;
-    --gradient-gold: linear-gradient(135deg, hsl(26 82% 52%), hsl(20 85% 45%));
-    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 6%) 0%, hsl(222 47% 12%) 100%);
-    --shadow-gold: 0 4px 24px -4px hsl(26 82% 52% / 0.25);
-    --shadow-card: 0 4px 32px -8px hsl(0 0% 0% / 0.4);
+    /* Matte near-black navy, locked. Values are the design's exact hexes
+       converted to HSL triplets so Tailwind's opacity modifiers
+       (bg-card/50, bg-primary/20) still resolve. */
+    --background: 224 41% 7.3%;      /* #0B0F1A page */
+    --foreground: 220 40% 94.1%;     /* #EAEEF6  14.8:1 on page */
+    --sidebar: 223 44% 6.3%;         /* #090D17  recessed chrome */
+    --card: 223 39% 9%;              /* #0E1320  +1 step of light */
+    --card-foreground: 220 40% 94.1%;
+    --popover: 223 39% 9%;
+    --popover-foreground: 220 40% 94.1%;
+
+    /* Rust is the single accent — active nav, one CTA per view. Never
+       combined with gold in the same element. */
+    --primary: 25 79% 56.9%;         /* #E8833A */
+    --primary-foreground: 224 41% 7.3%;
+    --accent: 25 79% 56.9%;
+    --accent-foreground: 224 41% 7.3%;
+
+    --secondary: 222 37% 12.4%;      /* #141B2B raised */
+    --secondary-foreground: 220 40% 94.1%;
+    --muted: 222 37% 12.4%;
+    --muted-foreground: 219 20% 67.5%;   /* #9BA7BD  7.4:1, AA at 12px */
+    --subtle: 219 14% 50%;               /* #6E7A91  column labels, AA large */
+    --dim: 219 16% 42.7%;                /* #5C687E  placeholder / row numerals */
+    --dormant: 219 18% 37.3%;            /* #4E5A70  empty-stage figures */
+
+    /* Hairline rules, flattened from rgba(255,255,255,.07/.09) over the page
+       so they stay stable on any surface rather than compounding. */
+    --border: 223 20% 13.7%;
+    --input: 223 18% 15.7%;
+    --ring: 25 79% 56.9%;
+
+    /* Stage colours encode WHO YOU ARE WAITING ON, not position in the
+       funnel - that is the whole point of the palette. Two stages sharing a
+       colour share a next action. */
+    --stage-neutral: 218 18% 61.2%;  /* #8A97AE early, no external dependency */
+    --stage-info: 212 60% 59.8%;     /* #5B95D6 our action pending */
+    --stage-gold: 40 48% 57.5%;      /* #C7A45E waiting on client or bank */
+    --stage-ok: 155 44% 44.3%;       /* #3FA37A investment executed */
+
+    --stall: 4 64% 57.6%;            /* #D8574E 30d+ alarm, always with a number */
+    --stall-foreground: 4 65% 70.6%; /* #E58A83 */
+    --lost: 333 11% 48.8%;           /* #8A6F7B inert plum-grey, not alarming */
+    --lost-foreground: 321 13% 61.2%;/* #A98FA0 */
+
+    --destructive: 4 64% 57.6%;
+    --destructive-foreground: 220 40% 94.1%;
+    --success: 155 44% 44.3%;
+    --success-foreground: 220 40% 94.1%;
+    --warning: 40 48% 57.5%;
+    --warning-foreground: 224 41% 7.3%;
+
+    /* Near-square corners. The brand reads institutional, not friendly. */
+    --radius: 3px;
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.06);
+    --shadow-raised: 0 4px 16px hsl(0 0% 0% / 0.08);
   }
 }
 
 @layer base {
   * { @apply border-border; }
   html, body, #root { @apply min-h-screen min-w-full; }
-  body { @apply bg-background text-foreground font-sans antialiased; font-family: 'Plus Jakarta Sans', sans-serif; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Montserrat', -apple-system, Helvetica, Arial, sans-serif;
+    font-feature-settings: 'kern' 1;
+  }
+  /* Every figure in the app is tabular — counts that change width as they
+     update make a table twitch on every refetch. */
+  .font-mono, [class*="font-mono"] { font-variant-numeric: tabular-nums; }
 }
 
 @layer utilities {
-  .text-gradient-gold { background: var(--gradient-gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .bg-gradient-gold { background: var(--gradient-gold); }
-  .bg-gradient-card { background: var(--gradient-card); }
-  .bg-gradient-hero { background: var(--gradient-hero); }
-  .shadow-gold { box-shadow: var(--shadow-gold); }
+  /* Display face, reserved for page titles and section headers. Never body. */
+  .font-display { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
+  /* Tracked small caps — the only uppercase in the system besides the wordmark. */
+  .eyebrow { @apply text-[11px] uppercase text-subtle; letter-spacing: 0.14em; }
   .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-raised { box-shadow: var(--shadow-raised); }
+  /* Flat surfaces only — the design system rules out gradients outright.
+     Kept as a class so the old call sites read as deliberate, not stale. */
+  .bg-surface { background-color: hsl(var(--card)); }
 }

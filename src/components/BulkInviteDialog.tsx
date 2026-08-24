@@ -153,7 +153,7 @@ export const BulkInviteDialog = ({ banks, onSuccess }: BulkInviteDialogProps) =>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[525px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Bulk Invite Users</DialogTitle>
+          <DialogTitle className="font-display text-foreground">Bulk Invite Users</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Invite multiple users at once. Enter one entry per line in the format: email, contact name. Bank and role are shared.
           </DialogDescription>
@@ -262,7 +262,7 @@ export const BulkInviteDialog = ({ banks, onSuccess }: BulkInviteDialogProps) =>
               <Button
                 type="submit"
                 disabled={isLoading || validEntries.length === 0}
-                className="bg-gradient-gold hover:opacity-90 text-primary-foreground"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {isLoading ? (
                   <>

@@ -229,11 +229,11 @@ export const UsersTable = ({ users, banks, onRefresh }: UsersTableProps) => {
       </div>
 
       {filteredAndSortedUsers.length === 0 ? (
-        <div className="rounded-lg border border-border bg-gradient-card p-8 text-center">
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">No users match the current filters.</p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-gradient-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">

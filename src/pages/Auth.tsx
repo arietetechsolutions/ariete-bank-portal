@@ -53,21 +53,21 @@ const Auth = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
             <img src={arieteLogo} alt="Ariete Capital" className="h-16 w-auto" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-foreground">Bank Portal</CardTitle>
+            <CardTitle className="font-display text-[26px] font-normal leading-[1.15] text-foreground">Bank Portal</CardTitle>
             <CardDescription className="text-muted-foreground">Login</CardDescription>
           </div>
         </CardHeader>

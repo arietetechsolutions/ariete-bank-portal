@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Loader2, AlertCircle, Landmark, UserPlus, CircleCheck, Clock, ArrowRightLeft, ShieldCheck, ClipboardCheck, TrendingUp, CircleX } from 'lucide-react';
+import { Loader2, AlertCircle, Landmark } from 'lucide-react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
+import PipelineFunnel from '@/components/PipelineFunnel';
+import { TONE_CHIP } from '@/components/StageChip';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -13,45 +15,51 @@ import { toast } from 'sonner';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { useUpdateBankAccountStatus } from '@/hooks/useUpdateBankAccountStatus';
 import { useAdmin } from '@/hooks/useAdmin';
-import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
+import {
+  BANK_ACCOUNT_STATUSES, BankAccountRecord, BankAccountStatus,
+  SETTLED_STATUSES, STAGE_SHORT_LABELS, STAGE_TONES, STALLED_AFTER_DAYS,
+} from '@/types/bankAccount';
 import { cn, daysSince, formatDaysSince } from '@/lib/utils';
 
-const STATUS_ICONS: Record<BankAccountStatus, React.ElementType> = {
-  'Registered': ClipboardCheck,
-  'Onboarding': UserPlus,
-  'Account Opened': CircleCheck,
-  'Waiting for transfer': Clock,
-  'Transfer made - waiting for AML letter': ArrowRightLeft,
-  'AML Letter Issued': ShieldCheck,
-  'Investment executed': TrendingUp,
-  'Lost': CircleX,
+/** A stalled account is one waiting on somebody past the threshold. Settled
+ *  stages are excluded: a client can sit in "Investment executed" for a year
+ *  without anything being wrong. */
+const isStalled = (acc: BankAccountRecord): boolean => {
+  if (!acc.status || SETTLED_STATUSES.includes(acc.status)) return false;
+  const days = daysSince(acc.status_changed_on);
+  return days !== null && days >= STALLED_AFTER_DAYS;
 };
 
 const Dashboard = () => {
   const { isAdmin } = useAdmin();
-  const { data: bankAccounts, isLoading, error, refetch } = useBankAccounts();
+  const { data: bankAccounts, isLoading, error, refetch, dataUpdatedAt } = useBankAccounts();
   const { updateStatus, isUpdating } = useUpdateBankAccountStatus();
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; newStatus: BankAccountStatus } | null>(null);
-  // null = no filter, show every account. Set by clicking a count tile.
+  // null = no filter. Set by clicking a funnel stage or the Lost tile.
   const [statusFilter, setStatusFilter] = useState<BankAccountStatus | null>(null);
+  const [stalledOnly, setStalledOnly] = useState(false);
 
-  // Deliberately counted over every account, not the filtered view - the
-  // tiles double as the filter control, so freezing the other tiles to 0
-  // once a filter is active would make it impossible to switch to another
-  // status or see where the rest of the book sits.
-  const statusCounts = useMemo(() => {
-    const counts = new Map<BankAccountStatus, number>();
-    for (const s of BANK_ACCOUNT_STATUSES) counts.set(s, 0);
-    for (const acc of bankAccounts || []) {
-      if (acc.status) counts.set(acc.status, (counts.get(acc.status) || 0) + 1);
+  // Memoised so the fresh [] on a loading render does not invalidate every
+  // downstream useMemo on each pass.
+  const accounts = useMemo(() => bankAccounts || [], [bankAccounts]);
+
+  const visibleAccounts = useMemo(() => accounts.filter((acc) => {
+    if (statusFilter && acc.status !== statusFilter) return false;
+    if (stalledOnly && !isStalled(acc)) return false;
+    return true;
+  }), [accounts, statusFilter, stalledOnly]);
+
+  const stalledCount = useMemo(() => accounts.filter(isStalled).length, [accounts]);
+
+  // Derived from the data rather than hardcoded to GC/CBH - bank staff see a
+  // single bank here, and the set of banks is Airtable's to decide.
+  const bankCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const acc of accounts) {
+      if (acc.bank_name) counts.set(acc.bank_name, (counts.get(acc.bank_name) || 0) + 1);
     }
-    return counts;
-  }, [bankAccounts]);
-
-  const visibleAccounts = useMemo(
-    () => (statusFilter ? (bankAccounts || []).filter((acc) => acc.status === statusFilter) : bankAccounts || []),
-    [bankAccounts, statusFilter],
-  );
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [accounts]);
 
   const handleStatusChange = (id: string, newStatus: BankAccountStatus) => {
     setConfirmDialog({ id, newStatus });
@@ -69,24 +77,36 @@ const Dashboard = () => {
     }
   };
 
+  const clearFilters = () => { setStatusFilter(null); setStalledOnly(false); };
+  const hasFilter = statusFilter !== null || stalledOnly;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 p-6 lg:p-8">
-          <div className="max-w-6xl mx-auto">
-            <h1 className="text-2xl font-bold text-foreground mb-1">{isAdmin ? 'All Clients' : 'Your Accounts'}</h1>
-            <p className="text-muted-foreground mb-6">
-              {isAdmin ? 'Every client across both banks' : 'Track and update your clients’ account-opening status'}
-            </p>
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto max-w-[1440px]">
+            {/* Page head - Playfair is reserved for exactly this. */}
+            <div className="flex flex-wrap items-end justify-between gap-6 border-b border-border px-6 py-6 lg:px-8">
+              <div className="flex flex-col gap-1.5">
+                <h1 className="font-display text-[30px] leading-[1.1] text-foreground">
+                  {isAdmin ? 'All clients' : 'Your clients'}
+                </h1>
+                <p className="text-[13.5px] text-stage-neutral">
+                  {isAdmin ? 'Every client across both banks' : 'Track and update your clients’ account-opening status'}
+                  {accounts.length > 0 && ` · ${accounts.length} record${accounts.length === 1 ? '' : 's'}`}
+                  {dataUpdatedAt > 0 && ` · updated ${new Date(dataUpdatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
+                </p>
+              </div>
+            </div>
 
             <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Status Update</AlertDialogTitle>
+                  <AlertDialogTitle className="font-display text-xl">Confirm status update</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Update status to <strong>{confirmDialog?.newStatus}</strong>?
+                    Update status to <strong className="text-foreground">{confirmDialog?.newStatus}</strong>?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -96,127 +116,184 @@ const Dashboard = () => {
               </AlertDialogContent>
             </AlertDialog>
 
-            {!isLoading && !error && bankAccounts && bankAccounts.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter(null)}
-                  aria-pressed={statusFilter === null}
-                  className={cn(
-                    'bg-gradient-card border rounded-lg p-4 shadow-card text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    statusFilter === null ? 'border-primary ring-1 ring-primary' : 'border-border',
+            {!isLoading && !error && accounts.length > 0 && (
+              <div className="flex flex-col gap-4 px-6 pt-6 lg:px-8">
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <span className="eyebrow">Pipeline · count / share / median days in stage</span>
+                  {bankCounts.length > 1 && (
+                    <div className="flex gap-4 font-mono text-[11.5px] text-stage-neutral">
+                      {bankCounts.map(([name, count]) => <span key={name}>{name} {count}</span>)}
+                    </div>
                   )}
-                >
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <Landmark className="w-4 h-4" />
-                    <span className="text-xs font-medium">Total</span>
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">{bankAccounts.length}</p>
-                </button>
-                {BANK_ACCOUNT_STATUSES.map((status) => {
-                  const Icon = STATUS_ICONS[status];
-                  const isActive = statusFilter === status;
-                  return (
-                    <button
-                      key={status}
-                      type="button"
-                      // Clicking the active tile again clears the filter, so
-                      // the Total tile is a convenience rather than the only
-                      // way back to the full list.
-                      onClick={() => setStatusFilter(isActive ? null : status)}
-                      aria-pressed={isActive}
-                      className={cn(
-                        'bg-gradient-card border rounded-lg p-4 shadow-card text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                        isActive ? 'border-primary ring-1 ring-primary' : 'border-border',
-                      )}
-                    >
-                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                        <Icon className="w-4 h-4" />
-                        <span className="text-xs font-medium leading-tight">{status}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{statusCounts.get(status)}</p>
-                    </button>
-                  );
-                })}
+                </div>
+                <PipelineFunnel accounts={accounts} statusFilter={statusFilter} onSelect={setStatusFilter} />
               </div>
             )}
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-            ) : error ? (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
-                <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-3" />
-                <p className="text-destructive font-medium mb-4">{error instanceof Error ? error.message : 'Failed to load accounts'}</p>
-                <Button variant="outline" onClick={() => refetch()}>Retry</Button>
-              </div>
-            ) : !bankAccounts || bankAccounts.length === 0 ? (
-              <div className="bg-secondary/50 rounded-lg p-12 text-center">
-                <Landmark className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-foreground font-medium mb-1">No accounts yet</p>
-                <p className="text-muted-foreground text-sm">Clients will appear here once they're routed to a bank</p>
-              </div>
-            ) : visibleAccounts.length === 0 ? (
-              <div className="bg-secondary/50 rounded-lg p-12 text-center">
-                <Landmark className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-foreground font-medium mb-1">No accounts with this status</p>
-                <p className="text-muted-foreground text-sm mb-4">Nothing is currently sitting in &ldquo;{statusFilter}&rdquo;</p>
-                <Button variant="outline" onClick={() => setStatusFilter(null)}>Show all accounts</Button>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+            {!isLoading && !error && accounts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 px-6 pt-6 lg:px-8">
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  aria-pressed={!hasFilter}
+                  className={cn(
+                    'flex h-[38px] items-center rounded-sm border px-3.5 text-[12.5px] transition-colors duration-fast',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    !hasFilter ? 'border-white/[0.09] bg-white/[0.07] text-foreground' : 'border-white/[0.09] text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  All stages
+                </button>
                 {statusFilter && (
-                  <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border bg-secondary/30">
-                    <p className="text-sm text-muted-foreground">
-                      Showing <span className="font-medium text-foreground">{visibleAccounts.length}</span> of {bankAccounts.length} &middot; filtered to &ldquo;{statusFilter}&rdquo;
-                    </p>
-                    <Button variant="ghost" size="sm" onClick={() => setStatusFilter(null)}>Clear filter</Button>
-                  </div>
+                  <span className={cn('flex h-[38px] items-center rounded-sm px-3.5 text-[12.5px]', TONE_CHIP[STAGE_TONES[statusFilter]])}>
+                    {statusFilter}
+                  </span>
                 )}
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="text-muted-foreground font-semibold">Client</TableHead>
-                        <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
-                        {isAdmin && <TableHead className="text-muted-foreground font-semibold">Bank</TableHead>}
-                        <TableHead className="text-muted-foreground font-semibold whitespace-nowrap">Days in Status</TableHead>
-                        <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visibleAccounts.map((acc) => (
-                        <TableRow key={acc.id} className="border-border hover:bg-secondary/30">
-                          <TableCell className="font-medium text-foreground">{acc.client_name || '-'}</TableCell>
-                          <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
-                          {isAdmin && <TableCell className="text-muted-foreground">{acc.bank_name || '-'}</TableCell>}
-                          <TableCell className="text-muted-foreground whitespace-nowrap tabular-nums">{formatDaysSince(daysSince(acc.status_changed_on))}</TableCell>
-                          <TableCell>
-                            <Select
-                              value={acc.status || undefined}
-                              onValueChange={(value) => handleStatusChange(acc.id, value as BankAccountStatus)}
-                              disabled={isUpdating === acc.id}
-                            >
-                              <SelectTrigger className="w-[280px] h-8">
-                                {isUpdating === acc.id ? (
-                                  <div className="flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /><span>Updating...</span></div>
-                                ) : (
-                                  <SelectValue placeholder="Select status" />
-                                )}
-                              </SelectTrigger>
-                              <SelectContent>
-                                {BANK_ACCOUNT_STATUSES.map((s) => (
-                                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                {/* The alarm colour never appears without the number it refers to. */}
+                <button
+                  type="button"
+                  onClick={() => setStalledOnly((v) => !v)}
+                  aria-pressed={stalledOnly}
+                  disabled={stalledCount === 0}
+                  className={cn(
+                    'flex h-[38px] items-center gap-2 rounded-sm border px-3.5 text-[12.5px] transition-colors duration-fast',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45',
+                    stalledOnly
+                      ? 'border-stall/70 bg-stall/[0.14] text-stall-foreground'
+                      : 'border-stall/35 bg-stall/[0.08] text-stall-foreground hover:border-stall/60',
+                  )}
+                >
+                  Stalled {STALLED_AFTER_DAYS}d+ · <span className="font-mono">{stalledCount}</span>
+                </button>
+                {hasFilter && (
+                  <>
+                    <span className="ml-auto font-mono text-[11.5px] text-subtle">
+                      {visibleAccounts.length} of {accounts.length}
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>Clear</Button>
+                  </>
+                )}
               </div>
             )}
+
+            <div className="px-6 py-6 lg:px-8">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
+              ) : error ? (
+                <div className="rounded-sm border border-destructive/25 bg-destructive/[0.08] p-6 text-center">
+                  <AlertCircle className="mx-auto mb-3 h-7 w-7 text-destructive" />
+                  <p className="mb-4 text-destructive-foreground">{error instanceof Error ? error.message : 'Failed to load accounts'}</p>
+                  <Button variant="outline" onClick={() => refetch()}>Retry</Button>
+                </div>
+              ) : accounts.length === 0 ? (
+                <div className="rounded-sm border border-border bg-card p-12 text-center">
+                  <Landmark className="mx-auto mb-4 h-10 w-10 text-dim" />
+                  <p className="mb-1 font-display text-lg text-foreground">No clients yet</p>
+                  <p className="text-[13.5px] text-muted-foreground">Clients appear here once they’re routed to a bank</p>
+                </div>
+              ) : visibleAccounts.length === 0 ? (
+                <div className="rounded-sm border border-border bg-card p-12 text-center">
+                  <p className="mb-1 font-display text-lg text-foreground">Nothing matches this filter</p>
+                  <p className="mb-4 text-[13.5px] text-muted-foreground">
+                    {stalledOnly && statusFilter ? `No ${statusFilter} client has been sitting for ${STALLED_AFTER_DAYS} days or more`
+                      : stalledOnly ? `Nothing has been sitting for ${STALLED_AFTER_DAYS} days or more`
+                      : `Nothing is currently in ${statusFilter}`}
+                  </p>
+                  <Button variant="outline" onClick={clearFilters}>Show all clients</Button>
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-sm border border-border bg-card">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border hover:bg-transparent">
+                          <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Client</TableHead>
+                          <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Email</TableHead>
+                          {isAdmin && <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Bank</TableHead>}
+                          <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Stage</TableHead>
+                          <TableHead className="h-auto py-3 text-right text-[10.5px] uppercase tracking-[0.12em] text-subtle whitespace-nowrap">Days since status change</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {visibleAccounts.map((acc) => {
+                          const days = daysSince(acc.status_changed_on);
+                          const stalled = isStalled(acc);
+                          const settled = !!acc.status && SETTLED_STATUSES.includes(acc.status);
+                          // Age bar tops out at 45 days - past that the bar is
+                          // full and the number carries the detail.
+                          const agePct = days === null || settled ? 0 : Math.min(100, Math.round((days / 45) * 100));
+                          return (
+                            <TableRow
+                              key={acc.id}
+                              className={cn('h-11 border-white/[0.045] hover:bg-white/[0.035]', stalled && 'bg-stall/[0.05]')}
+                            >
+                              <TableCell className="py-0">
+                                <div className="flex min-w-0 items-center gap-2.5">
+                                  {/* A 3px flag, not a whole red row: visible when
+                                      scanning, quiet when reading one record. */}
+                                  <span className={cn('h-[22px] w-[3px] flex-none rounded-sm',
+                                    stalled ? 'bg-stall' : acc.status === 'Lost' ? 'bg-lost/50' : 'bg-transparent')} />
+                                  <span className="truncate text-[13.5px] text-foreground">{acc.client_name || '—'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-0 text-[12.5px] text-stage-neutral">{acc.email || '—'}</TableCell>
+                              {isAdmin && <TableCell className="py-0 font-mono text-[11px] tracking-[0.06em] text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
+                              <TableCell className="py-0">
+                                <Select
+                                  value={acc.status || undefined}
+                                  onValueChange={(value) => handleStatusChange(acc.id, value as BankAccountStatus)}
+                                  disabled={isUpdating === acc.id}
+                                >
+                                  {/* The trigger IS the stage chip - one element
+                                      that shows the stage and changes it, rather
+                                      than a chip sitting next to a control. */}
+                                  <SelectTrigger className={cn(
+                                    'h-6 w-auto gap-1.5 whitespace-nowrap rounded-sm border-0 px-2.5 text-[11.5px] [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-45',
+                                    acc.status ? TONE_CHIP[STAGE_TONES[acc.status]] : 'bg-muted text-subtle',
+                                  )}>
+                                    {isUpdating === acc.id ? (
+                                      <div className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /><span>Updating…</span></div>
+                                    ) : (
+                                      // The short label, not SelectValue: the chip has to fit a
+                                      // table cell, and "Transfer made - waiting for AML letter"
+                                      // does not. The dropdown below still lists the full names.
+                                      <span>{acc.status ? STAGE_SHORT_LABELS[acc.status] : 'Set stage'}</span>
+                                    )}
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {BANK_ACCOUNT_STATUSES.map((s) => (
+                                      <SelectItem key={s} value={s} className="text-[12.5px]">{s}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="py-0">
+                                <div className="flex items-center justify-end gap-2.5">
+                                  <div className="h-1 w-14 overflow-hidden rounded-sm bg-white/[0.06]">
+                                    <div className={cn('h-1 rounded-sm',
+                                      stalled ? 'bg-stall' : days !== null && days >= 15 ? 'bg-stage-gold' : 'bg-stage-info')}
+                                      style={{ width: `${agePct}%` }} />
+                                  </div>
+                                  <span className={cn('min-w-[58px] text-right font-mono text-[13px]',
+                                    stalled ? 'text-stall-foreground' : settled ? 'text-subtle' : 'text-foreground')}>
+                                    {settled ? '—' : formatDaysSince(days)}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
+                    <span className="font-mono text-[11.5px] text-subtle">
+                      Showing {visibleAccounts.length === accounts.length ? `all ${accounts.length}` : `${visibleAccounts.length} of ${accounts.length}`} record{accounts.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </main>
       </div>

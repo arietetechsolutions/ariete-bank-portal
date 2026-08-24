@@ -86,7 +86,7 @@ export const EditUserDialog = ({ user, banks, open, onOpenChange, onSuccess }: E
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Edit User</DialogTitle>
+          <DialogTitle className="font-display text-foreground">Edit User</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Update role and bank for {user.email}
           </DialogDescription>
@@ -146,7 +146,7 @@ export const EditUserDialog = ({ user, banks, open, onOpenChange, onSuccess }: E
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-gradient-gold hover:opacity-90 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isLoading ? (
                 <>
