@@ -76,9 +76,13 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
               onClick={() => onSelect(isActive ? null : s.status)}
               aria-pressed={isActive}
               className={cn(
-                'flex min-w-0 flex-1 flex-col gap-3 rounded-sm border bg-card p-3.5 text-left transition-colors duration-fast',
+                'flex min-w-0 flex-1 flex-col gap-3 rounded-sm border bg-card p-3.5 text-left',
+                // Hover lifts the surface a step (card -> raised) as well as the
+                // border. The lit surface still clears 7.4:1 for the smallest
+                // label sitting on it, so lighting up costs no legibility.
+                'transition-colors duration-normal hover:bg-secondary',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                isActive ? 'border-primary/60' : 'border-white/[0.07] hover:border-white/[0.16]',
+                isActive ? 'border-primary/60 bg-secondary' : 'border-white/[0.07] hover:border-white/[0.22]',
                 // A dormant stage recedes through its figure colour and empty
                 // bar, NOT through opacity: dimming the whole card took its
                 // 11px label from 7.6:1 to 2.8:1, which is unreadable.
@@ -86,8 +90,8 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
               )}
             >
               <div className="flex items-start gap-1.5">
-                <span className="font-mono text-[10.5px] leading-[1.4] text-dim">{s.num}</span>
-                <span className="min-h-[30px] text-[11.5px] leading-[1.35] text-muted-foreground">
+                <span className="font-mono text-[11px] font-medium leading-[1.4] text-dim">{s.num}</span>
+                <span className="min-h-[34px] text-[12px] leading-[1.4] text-muted-foreground">
                   {STAGE_SHORT_LABELS[s.status]}
                 </span>
               </div>
@@ -98,13 +102,13 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
                 )}>
                   {s.count}
                 </span>
-                <span className="pb-1 font-mono text-[11px] text-subtle">{s.sharePct}%</span>
+                <span className="pb-1 font-mono text-[12px] text-subtle">{s.sharePct}%</span>
               </div>
               <div className="h-1 overflow-hidden rounded-sm bg-white/[0.05]">
                 <div className={cn('h-1 rounded-sm', TONE_BAR[tone])} style={{ width: `${s.barPct}%` }} />
               </div>
               <div className={cn(
-                'font-mono text-[11px]',
+                'font-mono text-[11.5px] font-medium',
                 isDormant ? 'text-dormant'
                   : s.medianDays === null ? 'text-subtle'
                   : s.medianDays >= 15 ? 'text-stall-foreground'
@@ -126,14 +130,15 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
         onClick={() => onSelect(statusFilter === TERMINAL_STATUS ? null : TERMINAL_STATUS)}
         aria-pressed={statusFilter === TERMINAL_STATUS}
         className={cn(
-          'flex w-[150px] flex-none flex-col gap-3 rounded-sm border border-dashed bg-background/60 p-3.5 text-left transition-colors duration-fast',
+          'flex w-[150px] flex-none flex-col gap-3 rounded-sm border border-dashed bg-background/60 p-3.5 text-left',
+          'transition-colors duration-normal hover:bg-lost/[0.08]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          statusFilter === TERMINAL_STATUS ? 'border-lost' : 'border-lost/40 hover:border-lost/70',
+          statusFilter === TERMINAL_STATUS ? 'border-lost bg-lost/[0.08]' : 'border-lost/45 hover:border-lost/80',
         )}
       >
-        <div className="min-h-[30px] text-[11px] text-lost-foreground">Lost · terminal</div>
+        <div className="min-h-[34px] text-[12px] text-lost-foreground">Lost · terminal</div>
         <div className="font-mono text-[32px] leading-none text-lost-foreground">{lostCount}</div>
-        <div className="font-mono text-[11px] text-subtle">{lostRatePct}% of all records</div>
+        <div className="font-mono text-[11.5px] font-medium text-subtle">{lostRatePct}% of all records</div>
       </button>
     </div>
   );

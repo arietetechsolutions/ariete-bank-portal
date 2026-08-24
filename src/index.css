@@ -8,12 +8,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Contrast rule for this palette: every text token is measured against the
-   surface it actually sits on, and anything used at 12.5px or below targets
-   7:1 rather than the 4.5:1 AA floor - at 10-11px the floor is not enough to
-   read comfortably. Never stack an opacity utility on top of these tokens;
-   halving the alpha of an already-recessive colour is what made the first
-   pass unreadable (a dormant funnel card bottomed out at 1.5:1). */
+/* Legibility rules for this palette, learned the hard way over two passes:
+   1. Ratio is necessary, not sufficient. 7:1 at 10.5px in a thin mono still
+      reads as mush. Nothing sits below 12px any more, and small labels carry
+      weight 500 rather than 400.
+   2. Every token is measured against the surface it actually sits on, and
+      small text targets 8:1+, not the 4.5:1 AA floor.
+   3. Never stack an opacity utility on these tokens - halving the alpha of an
+      already-recessive colour took a dormant card to 1.5:1.
+   4. Four greys, not six. Each tier must be distinguishable from its
+      neighbour at a glance or it is just another illegible shade. */
 @layer base {
   :root {
     /* Matte near-black navy, locked. Values are the design's exact hexes
@@ -37,12 +41,13 @@
     --secondary: 222 37% 12.4%;      /* #141B2B raised */
     --secondary-foreground: 220 40% 94.1%;
     --muted: 222 37% 12.4%;
-    --muted-foreground: 219 20% 67.5%;   /* #9BA7BD  7.6:1 on card */
-    --subtle: 221 14% 64.5%;             /* #98A0B1  7.1:1 - was #6E7A91 at 4.3:1,
-                                            which failed AA outright at the 10.5px
-                                            it is used for. */
-    --dim: 219 16% 60%;                  /* #8994A9  6.1:1 - was 3.3:1 */
-    --dormant: 220 18% 52.2%;            /* #6F7E9B  4.5:1 - was 2.7:1 */
+    --muted-foreground: 220 14% 74.1%;   /* #B4BAC6  9.5:1 */
+    --subtle: 221 14% 68.6%;             /* #A4ABBA  8.1:1 */
+    --dim: 221 16% 68.8%;                /* #A3ABBC  8.0:1 - folded up to the same
+                                            tier as --subtle. Six shades of grey was
+                                            three too many, and the bottom three
+                                            were all illegible. */
+    --dormant: 219 18% 60.2%;            /* #8794AC  6.1:1 */
 
     /* Hairline rules, flattened from rgba(255,255,255,.07/.09) over the page
        so they stay stable on any surface rather than compounding. */
@@ -53,7 +58,7 @@
     /* Stage colours encode WHO YOU ARE WAITING ON, not position in the
        funnel - that is the whole point of the palette. Two stages sharing a
        colour share a next action. */
-    --stage-neutral: 218 18% 64.5%;  /* #94A0B5 early, no external dependency (7.0:1) */
+    --stage-neutral: 218 18% 70.8%;  /* #A7B1C2 early, no external dependency (8.6:1) */
     --stage-info: 212 60% 59.8%;     /* #5B95D6 our action pending */
     --stage-gold: 40 48% 57.5%;      /* #C7A45E waiting on client or bank */
     --stage-ok: 155 44% 44.3%;       /* #3FA37A investment executed */
@@ -61,7 +66,7 @@
     --stall: 4 64% 57.6%;            /* #D8574E 30d+ alarm, always with a number */
     --stall-foreground: 4 65% 70.6%; /* #E58A83 */
     --lost: 333 11% 48.8%;           /* #8A6F7B inert plum-grey, not alarming */
-    --lost-foreground: 320 13% 63.5%;/* #AE96A6  7.0:1 */
+    --lost-foreground: 320 13% 67.6%;/* #B7A2B0  8.0:1 */
 
     --destructive: 4 64% 57.6%;
     --destructive-foreground: 220 40% 94.1%;
@@ -94,7 +99,7 @@
   /* Display face, reserved for page titles and section headers. Never body. */
   .font-display { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
   /* Tracked small caps — the only uppercase in the system besides the wordmark. */
-  .eyebrow { @apply text-[11px] uppercase text-subtle; letter-spacing: 0.14em; }
+  .eyebrow { @apply text-[12px] font-medium uppercase text-subtle; letter-spacing: 0.11em; }
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-raised { box-shadow: var(--shadow-raised); }
   /* Flat surfaces only — the design system rules out gradients outright.

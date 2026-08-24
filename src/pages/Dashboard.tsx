@@ -121,7 +121,7 @@ const Dashboard = () => {
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <span className="eyebrow">Pipeline · count / share / median days in stage</span>
                   {bankCounts.length > 1 && (
-                    <div className="flex gap-4 font-mono text-[11.5px] text-stage-neutral">
+                    <div className="flex gap-4 font-mono text-[12px] text-stage-neutral">
                       {bankCounts.map(([name, count]) => <span key={name}>{name} {count}</span>)}
                     </div>
                   )}
@@ -137,7 +137,7 @@ const Dashboard = () => {
                   onClick={clearFilters}
                   aria-pressed={!hasFilter}
                   className={cn(
-                    'flex h-[38px] items-center rounded-sm border px-3.5 text-[12.5px] transition-colors duration-fast',
+                    'flex h-[38px] items-center rounded-sm border px-3.5 text-[13px] transition-colors duration-fast',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     !hasFilter ? 'border-white/[0.09] bg-white/[0.07] text-foreground' : 'border-white/[0.09] text-muted-foreground hover:text-foreground',
                   )}
@@ -145,7 +145,7 @@ const Dashboard = () => {
                   All stages
                 </button>
                 {statusFilter && (
-                  <span className={cn('flex h-[38px] items-center rounded-sm px-3.5 text-[12.5px]', TONE_CHIP[STAGE_TONES[statusFilter]])}>
+                  <span className={cn('flex h-[38px] items-center rounded-sm px-3.5 text-[13px]', TONE_CHIP[STAGE_TONES[statusFilter]])}>
                     {statusFilter}
                   </span>
                 )}
@@ -156,7 +156,7 @@ const Dashboard = () => {
                   aria-pressed={stalledOnly}
                   disabled={stalledCount === 0}
                   className={cn(
-                    'flex h-[38px] items-center gap-2 rounded-sm border px-3.5 text-[12.5px] transition-colors duration-fast',
+                    'flex h-[38px] items-center gap-2 rounded-sm border px-3.5 text-[13px] transition-colors duration-fast',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45',
                     stalledOnly
                       ? 'border-stall/70 bg-stall/[0.14] text-stall-foreground'
@@ -167,7 +167,7 @@ const Dashboard = () => {
                 </button>
                 {hasFilter && (
                   <>
-                    <span className="ml-auto font-mono text-[11.5px] text-subtle">
+                    <span className="ml-auto font-mono text-[12px] text-subtle">
                       {visibleAccounts.length} of {accounts.length}
                     </span>
                     <Button variant="ghost" size="sm" onClick={clearFilters}>Clear</Button>
@@ -207,11 +207,11 @@ const Dashboard = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border hover:bg-transparent">
-                          <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Client</TableHead>
-                          <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Email</TableHead>
-                          {isAdmin && <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Bank</TableHead>}
-                          <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Stage</TableHead>
-                          <TableHead className="h-auto py-3 text-right text-[11px] uppercase tracking-[0.12em] text-subtle whitespace-nowrap">Days since status change</TableHead>
+                          <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Client</TableHead>
+                          <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Email</TableHead>
+                          {isAdmin && <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Bank</TableHead>}
+                          <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Stage</TableHead>
+                          <TableHead className="h-auto py-3 text-right text-[12px] font-medium uppercase tracking-[0.1em] text-subtle whitespace-nowrap">Days since status change</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -225,7 +225,7 @@ const Dashboard = () => {
                           return (
                             <TableRow
                               key={acc.id}
-                              className={cn('h-11 border-white/[0.045] hover:bg-white/[0.035]', stalled && 'bg-stall/[0.05]')}
+                              className={cn('h-11 border-white/[0.045] hover:bg-white/[0.05]', stalled && 'bg-stall/[0.05]')}
                             >
                               <TableCell className="py-0">
                                 <div className="flex min-w-0 items-center gap-2.5">
@@ -236,8 +236,8 @@ const Dashboard = () => {
                                   <span className="truncate text-[13.5px] text-foreground">{acc.client_name || '—'}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="py-0 text-[12.5px] text-stage-neutral">{acc.email || '—'}</TableCell>
-                              {isAdmin && <TableCell className="py-0 font-mono text-[11px] tracking-[0.06em] text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
+                              <TableCell className="py-0 text-[13px] text-stage-neutral">{acc.email || '—'}</TableCell>
+                              {isAdmin && <TableCell className="py-0 font-mono text-[12px] tracking-[0.06em] text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
                               <TableCell className="py-0">
                                 <Select
                                   value={acc.status || undefined}
@@ -248,7 +248,7 @@ const Dashboard = () => {
                                       that shows the stage and changes it, rather
                                       than a chip sitting next to a control. */}
                                   <SelectTrigger className={cn(
-                                    'h-6 w-auto gap-1.5 whitespace-nowrap rounded-sm border-0 px-2.5 text-[11.5px] [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-45',
+                                    'h-6 w-auto gap-1.5 whitespace-nowrap rounded-sm border-0 px-2.5 text-[12px] [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-45',
                                     acc.status ? TONE_CHIP[STAGE_TONES[acc.status]] : 'bg-muted text-subtle',
                                   )}>
                                     {isUpdating === acc.id ? (
@@ -262,7 +262,7 @@ const Dashboard = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {BANK_ACCOUNT_STATUSES.map((s) => (
-                                      <SelectItem key={s} value={s} className="text-[12.5px]">{s}</SelectItem>
+                                      <SelectItem key={s} value={s} className="text-[13px]">{s}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
@@ -274,7 +274,7 @@ const Dashboard = () => {
                                       stalled ? 'bg-stall' : days !== null && days >= 15 ? 'bg-stage-gold' : 'bg-stage-info')}
                                       style={{ width: `${agePct}%` }} />
                                   </div>
-                                  <span className={cn('min-w-[58px] text-right font-mono text-[13px]',
+                                  <span className={cn('min-w-[62px] text-right font-mono text-[13.5px]',
                                     stalled ? 'text-stall-foreground' : settled ? 'text-subtle' : 'text-foreground')}>
                                     {settled ? '—' : formatDaysSince(days)}
                                   </span>
@@ -287,7 +287,7 @@ const Dashboard = () => {
                     </Table>
                   </div>
                   <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
-                    <span className="font-mono text-[11.5px] text-subtle">
+                    <span className="font-mono text-[12px] text-subtle">
                       Showing {visibleAccounts.length === accounts.length ? `all ${accounts.length}` : `${visibleAccounts.length} of ${accounts.length}`} record{accounts.length === 1 ? '' : 's'}
                     </span>
                   </div>
