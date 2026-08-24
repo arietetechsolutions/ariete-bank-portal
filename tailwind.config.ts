@@ -46,7 +46,7 @@ export default {
           ok: { DEFAULT: "hsl(var(--stage-ok))", fg: "#6FC49C" },
         },
         stall: { DEFAULT: "hsl(var(--stall))", foreground: "hsl(var(--stall-foreground))" },
-        lost: { DEFAULT: "hsl(var(--lost))", foreground: "hsl(var(--lost-foreground))" },
+        lost: { DEFAULT: "hsl(var(--lost))", foreground: "hsl(var(--lost-foreground))", chip: "#B9A4B2" },
       },
       borderRadius: {
         lg: "4px",

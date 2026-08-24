@@ -207,11 +207,11 @@ const Dashboard = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border hover:bg-transparent">
-                          <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Client</TableHead>
-                          <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Email</TableHead>
-                          {isAdmin && <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Bank</TableHead>}
-                          <TableHead className="h-auto py-3 text-[10.5px] uppercase tracking-[0.12em] text-subtle">Stage</TableHead>
-                          <TableHead className="h-auto py-3 text-right text-[10.5px] uppercase tracking-[0.12em] text-subtle whitespace-nowrap">Days since status change</TableHead>
+                          <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Client</TableHead>
+                          <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Email</TableHead>
+                          {isAdmin && <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Bank</TableHead>}
+                          <TableHead className="h-auto py-3 text-[11px] uppercase tracking-[0.12em] text-subtle">Stage</TableHead>
+                          <TableHead className="h-auto py-3 text-right text-[11px] uppercase tracking-[0.12em] text-subtle whitespace-nowrap">Days since status change</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

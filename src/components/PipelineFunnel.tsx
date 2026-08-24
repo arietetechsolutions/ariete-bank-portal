@@ -79,14 +79,15 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
                 'flex min-w-0 flex-1 flex-col gap-3 rounded-sm border bg-card p-3.5 text-left transition-colors duration-fast',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive ? 'border-primary/60' : 'border-white/[0.07] hover:border-white/[0.16]',
-                // Dormant stages stay legible but recede - they are context,
-                // not something to act on.
-                isDormant && !isActive && 'opacity-50',
+                // A dormant stage recedes through its figure colour and empty
+                // bar, NOT through opacity: dimming the whole card took its
+                // 11px label from 7.6:1 to 2.8:1, which is unreadable.
+                isDormant && !isActive && 'bg-card/60',
               )}
             >
               <div className="flex items-start gap-1.5">
-                <span className="font-mono text-[10px] leading-[1.4] text-dim">{s.num}</span>
-                <span className="min-h-[30px] text-[11px] leading-[1.35] text-muted-foreground">
+                <span className="font-mono text-[10.5px] leading-[1.4] text-dim">{s.num}</span>
+                <span className="min-h-[30px] text-[11.5px] leading-[1.35] text-muted-foreground">
                   {STAGE_SHORT_LABELS[s.status]}
                 </span>
               </div>
@@ -103,7 +104,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
                 <div className={cn('h-1 rounded-sm', TONE_BAR[tone])} style={{ width: `${s.barPct}%` }} />
               </div>
               <div className={cn(
-                'font-mono text-[10.5px]',
+                'font-mono text-[11px]',
                 isDormant ? 'text-dormant'
                   : s.medianDays === null ? 'text-subtle'
                   : s.medianDays >= 15 ? 'text-stall-foreground'
@@ -132,7 +133,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
       >
         <div className="min-h-[30px] text-[11px] text-lost-foreground">Lost · terminal</div>
         <div className="font-mono text-[32px] leading-none text-lost-foreground">{lostCount}</div>
-        <div className="font-mono text-[10.5px] text-subtle">{lostRatePct}% of all records</div>
+        <div className="font-mono text-[11px] text-subtle">{lostRatePct}% of all records</div>
       </button>
     </div>
   );

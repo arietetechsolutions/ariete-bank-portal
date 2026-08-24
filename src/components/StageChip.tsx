@@ -8,7 +8,9 @@ export const TONE_CHIP: Record<StageTone, string> = {
   info: 'bg-stage-info/[0.13] text-stage-info-fg',
   gold: 'bg-stage-gold/[0.13] text-stage-gold-fg',
   ok: 'bg-stage-ok/[0.13] text-stage-ok-fg',
-  lost: 'bg-lost/[0.14] text-lost-foreground',
+  // The lost tint is the darkest of the five, so its label needs a step
+  // more lift than the token used elsewhere to clear 7:1.
+  lost: 'bg-lost/[0.14] text-lost-chip',
 };
 
 export const TONE_BAR: Record<StageTone, string> = {

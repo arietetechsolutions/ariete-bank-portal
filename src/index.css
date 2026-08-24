@@ -8,6 +8,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Contrast rule for this palette: every text token is measured against the
+   surface it actually sits on, and anything used at 12.5px or below targets
+   7:1 rather than the 4.5:1 AA floor - at 10-11px the floor is not enough to
+   read comfortably. Never stack an opacity utility on top of these tokens;
+   halving the alpha of an already-recessive colour is what made the first
+   pass unreadable (a dormant funnel card bottomed out at 1.5:1). */
 @layer base {
   :root {
     /* Matte near-black navy, locked. Values are the design's exact hexes
@@ -31,10 +37,12 @@
     --secondary: 222 37% 12.4%;      /* #141B2B raised */
     --secondary-foreground: 220 40% 94.1%;
     --muted: 222 37% 12.4%;
-    --muted-foreground: 219 20% 67.5%;   /* #9BA7BD  7.4:1, AA at 12px */
-    --subtle: 219 14% 50%;               /* #6E7A91  column labels, AA large */
-    --dim: 219 16% 42.7%;                /* #5C687E  placeholder / row numerals */
-    --dormant: 219 18% 37.3%;            /* #4E5A70  empty-stage figures */
+    --muted-foreground: 219 20% 67.5%;   /* #9BA7BD  7.6:1 on card */
+    --subtle: 221 14% 64.5%;             /* #98A0B1  7.1:1 - was #6E7A91 at 4.3:1,
+                                            which failed AA outright at the 10.5px
+                                            it is used for. */
+    --dim: 219 16% 60%;                  /* #8994A9  6.1:1 - was 3.3:1 */
+    --dormant: 220 18% 52.2%;            /* #6F7E9B  4.5:1 - was 2.7:1 */
 
     /* Hairline rules, flattened from rgba(255,255,255,.07/.09) over the page
        so they stay stable on any surface rather than compounding. */
@@ -45,7 +53,7 @@
     /* Stage colours encode WHO YOU ARE WAITING ON, not position in the
        funnel - that is the whole point of the palette. Two stages sharing a
        colour share a next action. */
-    --stage-neutral: 218 18% 61.2%;  /* #8A97AE early, no external dependency */
+    --stage-neutral: 218 18% 64.5%;  /* #94A0B5 early, no external dependency (7.0:1) */
     --stage-info: 212 60% 59.8%;     /* #5B95D6 our action pending */
     --stage-gold: 40 48% 57.5%;      /* #C7A45E waiting on client or bank */
     --stage-ok: 155 44% 44.3%;       /* #3FA37A investment executed */
@@ -53,7 +61,7 @@
     --stall: 4 64% 57.6%;            /* #D8574E 30d+ alarm, always with a number */
     --stall-foreground: 4 65% 70.6%; /* #E58A83 */
     --lost: 333 11% 48.8%;           /* #8A6F7B inert plum-grey, not alarming */
-    --lost-foreground: 321 13% 61.2%;/* #A98FA0 */
+    --lost-foreground: 320 13% 63.5%;/* #AE96A6  7.0:1 */
 
     --destructive: 4 64% 57.6%;
     --destructive-foreground: 220 40% 94.1%;
