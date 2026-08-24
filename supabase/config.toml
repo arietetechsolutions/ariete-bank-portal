@@ -11,6 +11,21 @@ additional_redirect_urls = ["http://localhost:8080/set-password", "http://127.0.
 # user-visible effect on session length.
 jwt_expiry = 900
 
+# The anon key ships in the public JS bundle, so an open signup endpoint lets
+# anyone POST /auth/v1/signup and mint a confirmed account on a bank portal
+# (mailer_autoconfirm is on, so there is not even an email round-trip). Such
+# an account has no bank_id and no role row, so the edge functions refuse it
+# every data request - but "the door is open and the rooms are locked" is not
+# the posture this app should ship with. Access is invitation-only by design;
+# this makes the auth server enforce that instead of relying on the absence
+# of a signup form in the UI.
+enable_signup = false
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits"
+
+[functions.set-password]
+verify_jwt = false
+
 [functions.get-bank-accounts]
 verify_jwt = false
 
