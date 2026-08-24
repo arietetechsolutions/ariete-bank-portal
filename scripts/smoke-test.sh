@@ -26,6 +26,7 @@ ADMIN_EMAIL="${ADMIN_EMAIL:-admin@arietecapital.com}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-TestAdmin123!}"
 STAFF_EMAIL="${STAFF_EMAIL:-james@gcpartners.com}"
 STAFF_PASSWORD="${STAFF_PASSWORD:-TestStaff123!}"
+SITE_URL="${SITE_URL:-http://localhost:8080}"
 
 PASS=0
 FAIL=0
@@ -120,6 +121,85 @@ else
   LOCKOUT_MESSAGE=$(echo "$LOCKOUT_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error',''))" 2>/dev/null)
   check "self-demoting the only admin is blocked" "$(echo "$LOCKOUT_MESSAGE" | grep -qi "last admin" && echo true || echo false)"
 fi
+
+
+echo "== Password gate: an invited session with no password set cannot read data =="
+# Regression guard for the invite-onboarding hole: GoTrue's /auth/v1/verify
+# mints a full token pair for an invite link, so "holds a valid session" and
+# "has completed onboarding" are different things. A session in that state
+# read live Bank Accounts data in production before this was closed.
+INVITE_EMAIL="smoke-nopassword-$$@example.com"
+INVITE_LINK_RESPONSE=$(curl -s -X POST "$SUPABASE_URL/auth/v1/admin/generate_link" \
+  -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"type\":\"invite\",\"email\":\"$INVITE_EMAIL\",\"redirect_to\":\"$SITE_URL/set-password\"}")
+INVITE_USER_ID=$(echo "$INVITE_LINK_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+INVITE_ACTION_LINK=$(echo "$INVITE_LINK_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('action_link',''))" 2>/dev/null)
+
+if [ -z "$INVITE_USER_ID" ] || [ -z "$INVITE_ACTION_LINK" ]; then
+  echo "  FAIL: could not generate an invite link to test with"
+  FAIL=$((FAIL + 1))
+else
+  # The generated link must actually point at the form. These four functions
+  # used to send redirect_to nested under `options`, which is the supabase-js
+  # client shape rather than the REST one - GoTrue ignored it and fell back to
+  # Site URL, so invitees landed on the app root and never saw the form.
+  check "generate_link preserves the /set-password path" \
+    "$(echo "$INVITE_ACTION_LINK" | grep -q "redirect_to=$SITE_URL/set-password" && echo true || echo false)"
+
+  # Give the invitee a bank, so the next check fails for the intended reason
+  # (no password) rather than for a missing bank_id.
+  curl -s -o /dev/null -X PATCH "$SUPABASE_URL/rest/v1/profiles?id=eq.$INVITE_USER_ID" \
+    -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+    -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+    -d '{"bank_id":"recJnFxg7L6qTPd6M"}'
+
+  # Click the link the way a real invitee's browser would, and keep the session
+  # it hands back.
+  INVITE_LOCATION=$(curl -s -o /dev/null -D - "$INVITE_ACTION_LINK" | grep -i "^location:" | tr -d '\r')
+  INVITE_TOKEN=$(echo "$INVITE_LOCATION" | sed -n 's/.*access_token=\([^&]*\).*/\1/p')
+
+  if [ -z "$INVITE_TOKEN" ]; then
+    echo "  FAIL: invite link did not yield a session to test with"
+    FAIL=$((FAIL + 1))
+  else
+    NOPASS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL/functions/v1/get-bank-accounts" \
+      -H "Authorization: Bearer $INVITE_TOKEN")
+    check "get-bank-accounts returns 403 for a session with no password set" \
+      "$([ "$NOPASS_STATUS" = "403" ] && echo true || echo false)"
+
+    # set-password is the one endpoint such a session must still reach.
+    SETPW_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL/functions/v1/set-password" \
+      -H "Authorization: Bearer $INVITE_TOKEN" -H "Content-Type: application/json" \
+      -d '{"password":"SmokeTest123"}')
+    check "set-password accepts a session with no password set" \
+      "$([ "$SETPW_STATUS" = "200" ] && echo true || echo false)"
+
+    # And the weak-password policy is enforced server-side, not just in the form.
+    WEAK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL/functions/v1/set-password" \
+      -H "Authorization: Bearer $INVITE_TOKEN" -H "Content-Type: application/json" \
+      -d '{"password":"weak"}')
+    check "set-password rejects a password that fails the strength policy" \
+      "$([ "$WEAK_STATUS" = "400" ] && echo true || echo false)"
+
+    # Having set one, the same session should now get through the gate.
+    AFTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL/functions/v1/get-bank-accounts" \
+      -H "Authorization: Bearer $INVITE_TOKEN")
+    check "get-bank-accounts admits the session once a password is set" \
+      "$([ "$AFTER_STATUS" = "200" ] && echo true || echo false)"
+  fi
+
+  curl -s -o /dev/null -X DELETE "$SUPABASE_URL/auth/v1/admin/users/$INVITE_USER_ID" \
+    -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY"
+fi
+
+echo "== Static guard: no generate_link call may nest redirect_to under options =="
+# Cheap check, but it is the one that actually stops this class of bug coming
+# back: the REST endpoint silently ignores the nested form instead of erroring,
+# so nothing else in CI would notice.
+NESTED_SHAPE=$(grep -rn "options: {" "$(dirname "$0")/../supabase/functions" --include=index.ts | wc -l | tr -d ' ')
+check "no edge function nests generate_link params under options" \
+  "$([ "$NESTED_SHAPE" = "0" ] && echo true || echo false)"
 
 echo
 echo "== Results: $PASS passed, $FAIL failed =="
