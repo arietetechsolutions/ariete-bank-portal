@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, passwordSet } = useAuth();
 
   if (loading) {
     return (
@@ -14,6 +14,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // A session alone is not enough. An invite link is itself a login - GoTrue
+  // mints a full token pair at /auth/v1/verify - so gating only on "a user
+  // exists" let anyone who clicked an invite email reach the dashboard without
+  // ever choosing a password, leaving the account with no password at all and
+  // a refresh token that rotates indefinitely.
+  if (!passwordSet) return <Navigate to="/set-password" replace />;
+
   return <>{children}</>;
 };
 

@@ -9,9 +9,11 @@ import { toast } from 'sonner';
 import { Loader2, Lock, CheckCircle } from 'lucide-react';
 import arieteLogo from '@/assets/ariete-logo.png';
 import { z } from 'zod';
+import { getFunctionErrorMessage } from '@/lib/utils';
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[0-9]/, 'Password must contain at least one number');
 
@@ -23,6 +25,9 @@ const SetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Captured while the invite session is still valid: setting the password
+  // revokes that session, so this cannot be read back afterwards.
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -40,13 +45,25 @@ const SetPassword = () => {
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken, refresh_token: refreshToken || '',
           });
-          if (sessionError) setError('Failed to verify invitation.');
+          if (sessionError) {
+            setError('Failed to verify invitation.');
+            return;
+          }
+
+          const { data: { user } } = await supabase.auth.getUser();
+          setAccountEmail(user?.email ?? null);
+
+          // Drop the fragment now that it has been spent. It keeps a pair of
+          // live credentials out of the URL bar, browser history and any
+          // Referer, and it stops a plain page reload from replaying the
+          // whole token-handling path against an already-consumed link.
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
           return;
         }
 
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) { setError('Invalid or expired invitation link.'); return; }
-        if (session) return;
+        if (session) { setAccountEmail(session.user?.email ?? null); return; }
 
         setError('Invalid invitation link.');
       } catch {
@@ -68,15 +85,49 @@ const SetPassword = () => {
     if (password !== confirmPassword) { toast.error('Passwords do not match'); return; }
 
     setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setIsLoading(false);
+    try {
+      // Goes through the set-password edge function rather than calling
+      // supabase.auth.updateUser() from the browser, so the strength rule
+      // above is enforced somewhere the user cannot skip - the form is not the
+      // only way to reach PATCH /auth/v1/user. The function writes the
+      // password with admin rights; a DB trigger derives
+      // app_metadata.password_set from it, which is what lifts the route and
+      // edge-function gates for this account.
+      const response = await supabase.functions.invoke('set-password', {
+        body: { password },
+      });
+      if (response.error) throw new Error(await getFunctionErrorMessage(response.error, 'Failed to set password'));
+      if (response.data?.error) throw new Error(response.data.error);
 
-    if (error) {
-      toast.error(error.message);
-    } else {
+      // Setting the password revokes the session the invite link minted -
+      // verified against production, where the old access token started
+      // returning 401 immediately after. Refreshing it is therefore useless;
+      // sign in properly with the password just chosen so the user lands in
+      // the app instead of being bounced to the login screen right after being
+      // told "Redirecting to dashboard...".
+      let signedIn = false;
+      if (accountEmail) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: accountEmail, password,
+        });
+        signedIn = !signInError;
+      }
+
       setIsSuccess(true);
       toast.success('Password set successfully!');
-      setTimeout(() => navigate('/'), 2000);
+
+      if (signedIn) {
+        setTimeout(() => navigate('/'), 2000);
+      } else {
+        // Rare: password is set, but we could not re-establish a session. Send
+        // them to the login form rather than to a route that would bounce them.
+        toast.info('Please sign in with your new password.');
+        setTimeout(() => navigate('/auth'), 2000);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to set password');
+    } finally {
+      setIsLoading(false);
     }
   };
 

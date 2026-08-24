@@ -53,5 +53,13 @@ export const useAuth = () => {
     return { error };
   };
 
-  return { user, session, loading, signIn, signOut };
+  // Read from app_metadata, never user_metadata: user_metadata is writable by
+  // the user via auth.updateUser(), so a gate built on it could be flipped
+  // open by the very person it is meant to stop. app_metadata is
+  // service-role-only, and useAuth resolves `user` through getUser(), which
+  // round-trips to the Auth server - so this reflects the current truth rather
+  // than whatever a possibly-stale cached JWT claims.
+  const passwordSet = user?.app_metadata?.password_set === true;
+
+  return { user, session, loading, passwordSet, signIn, signOut };
 };

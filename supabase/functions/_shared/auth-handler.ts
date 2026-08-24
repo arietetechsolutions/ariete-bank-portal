@@ -7,6 +7,7 @@ export interface AuthContext {
   userEmail: string;
   supabase: SupabaseClient;
   isAdmin: boolean;
+  passwordSet: boolean;
   profile?: {
     bank_id: string | null;
     contact_name: string | null;
@@ -16,6 +17,13 @@ export interface AuthContext {
 export interface AuthOptions {
   requireAdmin?: boolean;
   requireBankId?: boolean;
+  /**
+   * Allow a caller who has NOT yet set a password. Defaults to false, so every
+   * endpoint refuses half-onboarded sessions unless it explicitly opts in.
+   * Only set-password should ever pass this - it is the endpoint that exists
+   * to get such a session out of that state.
+   */
+  allowPasswordNotSet?: boolean;
 }
 
 export type AuthResult =
@@ -23,7 +31,7 @@ export type AuthResult =
   | { success: false; response: Response };
 
 export async function authenticateRequest(req: Request, options: AuthOptions = {}): Promise<AuthResult> {
-  const { requireAdmin = false, requireBankId = false } = options;
+  const { requireAdmin = false, requireBankId = false, allowPasswordNotSet = false } = options;
 
   // checkRateLimit keys on user.id, which doesn't exist yet for an
   // unauthenticated or bad-token request - without a check here, a flood of
@@ -60,6 +68,25 @@ export async function authenticateRequest(req: Request, options: AuthOptions = {
 
   const userEmail = user.email || 'unknown';
 
+  // An invite/recovery link IS a login: GoTrue mints a full token pair at
+  // /auth/v1/verify, before this app gets a say. Without this check, clicking
+  // an invite email was by itself enough to read live bank data - proven
+  // against production, where such a session returned real Bank Accounts
+  // records. The frontend gate in ProtectedRoute is not sufficient on its own;
+  // these functions are a public HTTP surface and a token works against them
+  // with no browser involved.
+  //
+  // Read from app_metadata (service-role-only, carried in the signed JWT and
+  // kept in sync with auth.users.encrypted_password by a DB trigger), never
+  // from user_metadata - the user can write their own user_metadata via
+  // auth.updateUser() and would be able to flip their own gate open.
+  //
+  // Explicitly fails closed: a missing flag counts as "no password set".
+  const passwordSet = user.app_metadata?.password_set === true;
+  if (!passwordSet && !allowPasswordNotSet) {
+    return { success: false, response: new Response(JSON.stringify({ success: false, error: 'You must set a password before using the portal.', code: 'PASSWORD_NOT_SET' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
+  }
+
   const { data: adminRole } = await supabase
     .from('user_roles').select('id').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
   const isAdmin = !!adminRole;
@@ -80,7 +107,7 @@ export async function authenticateRequest(req: Request, options: AuthOptions = {
     return { success: false, response: new Response(JSON.stringify({ success: false, error: 'Your profile does not have a bank assigned. Please contact an administrator.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) };
   }
 
-  return { success: true, context: { user, userEmail, supabase, isAdmin, profile } };
+  return { success: true, context: { user, userEmail, supabase, isAdmin, passwordSet, profile } };
 }
 
 export function createAdminClient(): SupabaseClient {

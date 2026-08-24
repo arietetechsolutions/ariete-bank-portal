@@ -4,7 +4,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Loader2 } from 'lucide-react';
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, passwordSet } = useAuth();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
 
   if (authLoading || adminLoading) {
@@ -16,6 +16,9 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  // Checked before the role test: an admin who has not set a password yet is
+  // still a half-onboarded session and must finish that first.
+  if (!passwordSet) return <Navigate to="/set-password" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
