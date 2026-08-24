@@ -14,7 +14,7 @@ import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { useUpdateBankAccountStatus } from '@/hooks/useUpdateBankAccountStatus';
 import { useAdmin } from '@/hooks/useAdmin';
 import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
-import { daysSince, formatDaysSince } from '@/lib/utils';
+import { cn, daysSince, formatDaysSince } from '@/lib/utils';
 
 const STATUS_ICONS: Record<BankAccountStatus, React.ElementType> = {
   'Registered': ClipboardCheck,
@@ -32,7 +32,13 @@ const Dashboard = () => {
   const { data: bankAccounts, isLoading, error, refetch } = useBankAccounts();
   const { updateStatus, isUpdating } = useUpdateBankAccountStatus();
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; newStatus: BankAccountStatus } | null>(null);
+  // null = no filter, show every account. Set by clicking a count tile.
+  const [statusFilter, setStatusFilter] = useState<BankAccountStatus | null>(null);
 
+  // Deliberately counted over every account, not the filtered view - the
+  // tiles double as the filter control, so freezing the other tiles to 0
+  // once a filter is active would make it impossible to switch to another
+  // status or see where the rest of the book sits.
   const statusCounts = useMemo(() => {
     const counts = new Map<BankAccountStatus, number>();
     for (const s of BANK_ACCOUNT_STATUSES) counts.set(s, 0);
@@ -41,6 +47,11 @@ const Dashboard = () => {
     }
     return counts;
   }, [bankAccounts]);
+
+  const visibleAccounts = useMemo(
+    () => (statusFilter ? (bankAccounts || []).filter((acc) => acc.status === statusFilter) : bankAccounts || []),
+    [bankAccounts, statusFilter],
+  );
 
   const handleStatusChange = (id: string, newStatus: BankAccountStatus) => {
     setConfirmDialog({ id, newStatus });
@@ -87,23 +98,44 @@ const Dashboard = () => {
 
             {!isLoading && !error && bankAccounts && bankAccounts.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-                <div className="bg-gradient-card border border-border rounded-lg p-4 shadow-card">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter(null)}
+                  aria-pressed={statusFilter === null}
+                  className={cn(
+                    'bg-gradient-card border rounded-lg p-4 shadow-card text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    statusFilter === null ? 'border-primary ring-1 ring-primary' : 'border-border',
+                  )}
+                >
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <Landmark className="w-4 h-4" />
                     <span className="text-xs font-medium">Total</span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{bankAccounts.length}</p>
-                </div>
+                </button>
                 {BANK_ACCOUNT_STATUSES.map((status) => {
                   const Icon = STATUS_ICONS[status];
+                  const isActive = statusFilter === status;
                   return (
-                    <div key={status} className="bg-gradient-card border border-border rounded-lg p-4 shadow-card">
+                    <button
+                      key={status}
+                      type="button"
+                      // Clicking the active tile again clears the filter, so
+                      // the Total tile is a convenience rather than the only
+                      // way back to the full list.
+                      onClick={() => setStatusFilter(isActive ? null : status)}
+                      aria-pressed={isActive}
+                      className={cn(
+                        'bg-gradient-card border rounded-lg p-4 shadow-card text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        isActive ? 'border-primary ring-1 ring-primary' : 'border-border',
+                      )}
+                    >
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Icon className="w-4 h-4" />
                         <span className="text-xs font-medium leading-tight">{status}</span>
                       </div>
                       <p className="text-2xl font-bold text-foreground">{statusCounts.get(status)}</p>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -123,8 +155,23 @@ const Dashboard = () => {
                 <p className="text-foreground font-medium mb-1">No accounts yet</p>
                 <p className="text-muted-foreground text-sm">Clients will appear here once they're routed to a bank</p>
               </div>
+            ) : visibleAccounts.length === 0 ? (
+              <div className="bg-secondary/50 rounded-lg p-12 text-center">
+                <Landmark className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-foreground font-medium mb-1">No accounts with this status</p>
+                <p className="text-muted-foreground text-sm mb-4">Nothing is currently sitting in &ldquo;{statusFilter}&rdquo;</p>
+                <Button variant="outline" onClick={() => setStatusFilter(null)}>Show all accounts</Button>
+              </div>
             ) : (
               <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+                {statusFilter && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border bg-secondary/30">
+                    <p className="text-sm text-muted-foreground">
+                      Showing <span className="font-medium text-foreground">{visibleAccounts.length}</span> of {bankAccounts.length} &middot; filtered to &ldquo;{statusFilter}&rdquo;
+                    </p>
+                    <Button variant="ghost" size="sm" onClick={() => setStatusFilter(null)}>Clear filter</Button>
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -132,18 +179,16 @@ const Dashboard = () => {
                         <TableHead className="text-muted-foreground font-semibold">Client</TableHead>
                         <TableHead className="text-muted-foreground font-semibold">Email</TableHead>
                         {isAdmin && <TableHead className="text-muted-foreground font-semibold">Bank</TableHead>}
-                        <TableHead className="text-muted-foreground font-semibold">Date Added</TableHead>
                         <TableHead className="text-muted-foreground font-semibold whitespace-nowrap">Days in Status</TableHead>
                         <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {bankAccounts.map((acc) => (
+                      {visibleAccounts.map((acc) => (
                         <TableRow key={acc.id} className="border-border hover:bg-secondary/30">
                           <TableCell className="font-medium text-foreground">{acc.client_name || '-'}</TableCell>
                           <TableCell className="text-muted-foreground">{acc.email || '-'}</TableCell>
                           {isAdmin && <TableCell className="text-muted-foreground">{acc.bank_name || '-'}</TableCell>}
-                          <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(acc.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}</TableCell>
                           <TableCell className="text-muted-foreground whitespace-nowrap tabular-nums">{formatDaysSince(daysSince(acc.status_changed_on))}</TableCell>
                           <TableCell>
                             <Select
