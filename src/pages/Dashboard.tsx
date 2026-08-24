@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, AlertCircle, Landmark, UserPlus, CircleCheck, Clock, ArrowRightLeft, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertCircle, Landmark, UserPlus, CircleCheck, Clock, ArrowRightLeft, ShieldCheck, ClipboardCheck, TrendingUp, CircleX } from 'lucide-react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,14 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { BANK_ACCOUNT_STATUSES, BankAccountStatus } from '@/types/bankAccount';
 
 const STATUS_ICONS: Record<BankAccountStatus, React.ElementType> = {
+  'Registered': ClipboardCheck,
   'Onboarding': UserPlus,
   'Account Opened': CircleCheck,
   'Waiting for transfer': Clock,
   'Transfer made - waiting for AML letter': ArrowRightLeft,
   'AML Letter Issued': ShieldCheck,
+  'Investment executed': TrendingUp,
+  'Lost': CircleX,
 };
 
 const Dashboard = () => {
@@ -82,7 +85,7 @@ const Dashboard = () => {
             </AlertDialog>
 
             {!isLoading && !error && bankAccounts && bankAccounts.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
                 <div className="bg-gradient-card border border-border rounded-lg p-4 shadow-card">
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <Landmark className="w-4 h-4" />

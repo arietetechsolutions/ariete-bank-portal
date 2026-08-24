@@ -12,12 +12,17 @@ const updateSchema = z.object({
   // would have let a client-controlled string reach fetchRecord/updateRecord
   // unescaped.
   bankAccountId: z.string().trim().regex(AIRTABLE_RECORD_ID_REGEX, "Invalid bank account ID"),
+  // Keep in lockstep with BANK_ACCOUNT_STATUSES in src/types/bankAccount.ts
+  // and with the option labels on the Airtable single select.
   newStatus: z.enum([
+    'Registered',
     'Onboarding',
     'Account Opened',
     'Waiting for transfer',
     'Transfer made - waiting for AML letter',
     'AML Letter Issued',
+    'Investment executed',
+    'Lost',
   ]),
 });
 
