@@ -25,10 +25,10 @@ export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
                 block - the accent is allowed one appearance per view and a
                 solid rust button would spend it on navigation. */}
             <Link to={item.href} onClick={onNavigate} className={cn(
-              "flex items-center gap-2.5 rounded-sm border-l-2 px-3 py-2.5 text-[13.5px] transition-colors duration-fast",
+              "flex items-center gap-2.5 rounded-md border-l-2 px-3 py-2.5 text-sm transition-colors duration-fast",
               isActive
                 ? "border-primary bg-primary/[0.12] font-semibold text-primary"
-                : "border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}>
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -42,7 +42,7 @@ export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 const Sidebar = () => {
   return (
-    <aside className="hidden min-h-[calc(100vh-73px)] w-[236px] flex-none flex-col border-r border-white/[0.06] bg-sidebar md:flex">
+    <aside className="hidden min-h-[calc(100vh-73px)] w-[236px] flex-none flex-col border-r border-border bg-sidebar md:flex">
       <nav className="flex-1 px-3 py-6">
         <SidebarNav />
       </nav>
