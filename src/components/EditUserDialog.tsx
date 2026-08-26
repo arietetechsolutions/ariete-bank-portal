@@ -86,7 +86,7 @@ export const EditUserDialog = ({ user, banks, open, onOpenChange, onSuccess }: E
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-display text-foreground">Edit User</DialogTitle>
+          <DialogTitle className="text-foreground">Edit User</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Update role and bank for {user.email}
           </DialogDescription>

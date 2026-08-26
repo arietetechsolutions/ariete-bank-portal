@@ -76,13 +76,13 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
               onClick={() => onSelect(isActive ? null : s.status)}
               aria-pressed={isActive}
               className={cn(
-                'flex min-w-0 flex-1 flex-col gap-3 rounded-sm border bg-card p-3.5 text-left',
+                'flex min-w-0 flex-1 flex-col gap-3 rounded-lg border bg-card p-3.5 text-left',
                 // Hover lifts the surface a step (card -> raised) as well as the
                 // border. The lit surface still clears 7.4:1 for the smallest
                 // label sitting on it, so lighting up costs no legibility.
                 'transition-colors duration-normal hover:bg-secondary',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                isActive ? 'border-primary/60 bg-secondary' : 'border-white/[0.07] hover:border-white/[0.22]',
+                isActive ? 'border-primary/60 bg-secondary' : 'border-border hover:border-border',
                 // A dormant stage recedes through its figure colour and empty
                 // bar, NOT through opacity: dimming the whole card took its
                 // 11px label from 7.6:1 to 2.8:1, which is unreadable.
@@ -90,25 +90,25 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
               )}
             >
               <div className="flex items-start gap-1.5">
-                <span className="font-mono text-[12px] font-medium leading-[1.4] text-dim">{s.num}</span>
-                <span className="min-h-[34px] text-[12px] leading-[1.4] text-muted-foreground">
+                <span className="tabular-nums text-xs font-medium leading-[1.4] text-dim">{s.num}</span>
+                <span className="min-h-[34px] text-xs leading-[1.4] text-muted-foreground">
                   {STAGE_SHORT_LABELS[s.status]}
                 </span>
               </div>
               <div className="flex items-end gap-2">
                 <span className={cn(
-                  'font-mono text-[32px] leading-none',
+                  'tabular-nums text-3xl leading-none',
                   isDormant ? 'text-dormant' : s.status === 'Investment executed' ? 'text-stage-ok' : 'text-foreground',
                 )}>
                   {s.count}
                 </span>
-                <span className="pb-1 font-mono text-[12px] text-subtle">{s.sharePct}%</span>
+                <span className="pb-1 tabular-nums text-xs text-subtle">{s.sharePct}%</span>
               </div>
-              <div className="h-1 overflow-hidden rounded-sm bg-white/[0.05]">
+              <div className="h-1 overflow-hidden rounded-sm bg-secondary">
                 <div className={cn('h-1 rounded-sm', TONE_BAR[tone])} style={{ width: `${s.barPct}%` }} />
               </div>
               <div className={cn(
-                'font-mono text-[12px] font-medium',
+                'tabular-nums text-xs font-medium',
                 isDormant ? 'text-dormant'
                   : s.medianDays === null ? 'text-subtle'
                   : s.medianDays >= 15 ? 'text-stall-foreground'
@@ -130,15 +130,15 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
         onClick={() => onSelect(statusFilter === TERMINAL_STATUS ? null : TERMINAL_STATUS)}
         aria-pressed={statusFilter === TERMINAL_STATUS}
         className={cn(
-          'flex w-[150px] flex-none flex-col gap-3 rounded-sm border border-dashed bg-background/60 p-3.5 text-left',
+          'flex w-[150px] flex-none flex-col gap-3 rounded-lg border border-dashed bg-background/60 p-3.5 text-left',
           'transition-colors duration-normal hover:bg-lost/[0.08]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           statusFilter === TERMINAL_STATUS ? 'border-lost bg-lost/[0.08]' : 'border-lost/45 hover:border-lost/80',
         )}
       >
-        <div className="min-h-[34px] text-[12px] text-lost-foreground">Lost · terminal</div>
-        <div className="font-mono text-[32px] leading-none text-lost-foreground">{lostCount}</div>
-        <div className="font-mono text-[12px] font-medium text-subtle">{lostRatePct}% of all records</div>
+        <div className="min-h-[34px] text-xs text-lost-foreground">Lost · terminal</div>
+        <div className="tabular-nums text-3xl leading-none text-lost-foreground">{lostCount}</div>
+        <div className="tabular-nums text-xs font-medium text-subtle">{lostRatePct}% of all records</div>
       </button>
     </div>
   );

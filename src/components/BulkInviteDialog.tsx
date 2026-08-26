@@ -153,7 +153,7 @@ export const BulkInviteDialog = ({ banks, onSuccess }: BulkInviteDialogProps) =>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[525px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-display text-foreground">Bulk Invite Users</DialogTitle>
+          <DialogTitle className="text-foreground">Bulk Invite Users</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Invite multiple users at once. Enter one entry per line in the format: email, contact name. Bank and role are shared.
           </DialogDescription>
@@ -199,11 +199,11 @@ export const BulkInviteDialog = ({ banks, onSuccess }: BulkInviteDialogProps) =>
                   placeholder={"john@example.com, John Doe\njane@example.com, Jane Smith\nmark@example.com, Mark Brown"}
                   value={entriesText}
                   onChange={(e) => setEntriesText(e.target.value)}
-                  className="bg-secondary border-border text-foreground min-h-[140px] resize-y font-mono text-sm"
+                  className="bg-secondary border-border text-foreground min-h-[140px] resize-y tabular-nums text-sm"
                   disabled={isLoading}
                 />
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p>One entry per line: <span className="font-mono">email, contact name</span></p>
+                  <p>One entry per line: <span className="tabular-nums">email, contact name</span></p>
                   {parsedEntries.length > 0 && (
                     <p className="text-foreground">
                       {validEntries.length} valid entry(ies)

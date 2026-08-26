@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[A-Z]/, 'Password must contain at least one letter')
   .regex(/[0-9]/, 'Password must contain at least one number');
 
 const SetPassword = () => {
@@ -91,7 +91,7 @@ const SetPassword = () => {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center"><img src={arieteLogo} alt="Ariete Capital" className="h-16 w-auto" /></div>
             <div>
-              <CardTitle className="font-display text-2xl font-bold text-foreground">Invitation Error</CardTitle>
+              <CardTitle className="text-2xl font-bold text-foreground">Invitation Error</CardTitle>
               <CardDescription className="text-destructive mt-2">{error}</CardDescription>
             </div>
           </CardHeader>
@@ -108,7 +108,7 @@ const SetPassword = () => {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center"><CheckCircle className="w-16 h-16 text-green-500" /></div>
             <div>
-              <CardTitle className="font-display text-2xl font-bold text-foreground">Account Created!</CardTitle>
+              <CardTitle className="text-2xl font-bold text-foreground">Account Created!</CardTitle>
               <CardDescription className="text-muted-foreground">Redirecting to dashboard...</CardDescription>
             </div>
           </CardHeader>
@@ -123,7 +123,7 @@ const SetPassword = () => {
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center"><img src={arieteLogo} alt="Ariete Capital" className="h-16 w-auto" /></div>
           <div>
-            <CardTitle className="font-display text-2xl font-bold text-foreground">Welcome!</CardTitle>
+            <CardTitle className="text-2xl font-bold text-foreground">Welcome!</CardTitle>
             <CardDescription className="text-muted-foreground">Set your password to complete your account setup</CardDescription>
           </div>
         </CardHeader>

@@ -30,7 +30,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-sidebar">
+    <header className="sticky top-0 z-50 border-b border-border bg-sidebar">
       <div className="w-full px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -39,7 +39,7 @@ const Header = () => {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[236px] border-white/[0.06] bg-sidebar p-3">
+            <SheetContent side="left" className="w-[236px] border-border bg-sidebar p-3">
               <nav className="mt-8">
                 <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
               </nav>
@@ -50,10 +50,10 @@ const Header = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2.5">
             <div className="flex flex-col items-end gap-0.5">
-              <span className="text-[13px] text-foreground">{displayName}</span>
-              <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-subtle">{isAdmin ? 'Admin' : (bankName || 'Bank staff')}</span>
+              <span className="text-sm text-foreground">{displayName}</span>
+              <span className="text-xs font-medium text-subtle">{isAdmin ? 'Admin' : (bankName || 'Bank staff')}</span>
             </div>
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-sm border border-white/[0.1] bg-secondary font-mono text-[12px] text-muted-foreground">
+            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-md border border-border bg-secondary tabular-nums text-xs text-muted-foreground">
               {initials}
             </span>
           </div>

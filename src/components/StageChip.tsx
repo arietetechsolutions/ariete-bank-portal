@@ -29,7 +29,7 @@ export const toneFor = (status: BankAccountStatus | ''): StageTone =>
 const StageChip = ({ status, className }: { status: BankAccountStatus | ''; className?: string }) => (
   <span
     className={cn(
-      'inline-flex h-6 items-center whitespace-nowrap rounded-sm px-2.5 text-[12px]',
+      'inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-xs',
       status ? TONE_CHIP[STAGE_TONES[status]] : 'bg-muted text-subtle',
       className,
     )}

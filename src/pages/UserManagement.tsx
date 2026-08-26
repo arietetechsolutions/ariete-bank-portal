@@ -38,7 +38,7 @@ const UserManagement = () => {
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center gap-4 mb-8">
               <div>
-                <h1 className="mb-1.5 font-display text-[30px] leading-[1.1] text-foreground">User management</h1>
+                <h1 className="mb-1.5 text-3xl leading-[1.1] text-foreground">User management</h1>
                 <p className="text-muted-foreground">Invite new users and manage their bank assignments</p>
               </div>
               <div className="flex gap-2">
@@ -49,10 +49,10 @@ const UserManagement = () => {
 
             <div className="bg-card border border-border rounded-lg p-6 mb-8 shadow-card">
               <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-sm border border-white/[0.08] bg-primary/[0.1]"><Users className="h-5 w-5 text-primary" /></div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-primary/[0.1]"><Users className="h-5 w-5 text-primary" /></div>
                 <div>
                   <p className="eyebrow mb-1.5">Total users</p>
-                  <p className="font-mono text-[32px] leading-none text-foreground">{users.length}</p>
+                  <p className="tabular-nums text-3xl leading-none text-foreground">{users.length}</p>
                 </div>
               </div>
             </div>

@@ -90,14 +90,14 @@ const Dashboard = () => {
             {/* Page head - Playfair is reserved for exactly this. */}
             <div className="flex flex-wrap items-end justify-between gap-6 border-b border-border px-6 py-6 lg:px-8">
               <div className="flex flex-col gap-1.5">
-                <h1 className="font-display text-[30px] leading-[1.1] text-foreground">
+                <h1 className="text-3xl leading-[1.1] text-foreground">
                   {isAdmin ? 'All clients' : 'Your clients'}
                 </h1>
                 {/* Deliberately just the description. The record count already
                     sits in the table footer, and a "last updated" clock on a
                     view that silently refetches every 30s tells staff nothing
                     they can act on. */}
-                <p className="text-[13.5px] text-stage-neutral">
+                <p className="text-sm text-stage-neutral">
                   {isAdmin ? 'Every client across both banks' : 'Track and update your clients’ account-opening status'}
                 </p>
               </div>
@@ -106,7 +106,7 @@ const Dashboard = () => {
             <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle className="font-display text-xl">Confirm status update</AlertDialogTitle>
+                  <AlertDialogTitle className="text-xl">Confirm status update</AlertDialogTitle>
                   <AlertDialogDescription>
                     Update status to <strong className="text-foreground">{confirmDialog?.newStatus}</strong>?
                   </AlertDialogDescription>
@@ -123,7 +123,7 @@ const Dashboard = () => {
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <span className="eyebrow">Pipeline · count / share / median days in stage</span>
                   {bankCounts.length > 1 && (
-                    <div className="flex gap-4 font-mono text-[12px] text-stage-neutral">
+                    <div className="flex gap-4 tabular-nums text-xs text-stage-neutral">
                       {bankCounts.map(([name, count]) => <span key={name}>{name} {count}</span>)}
                     </div>
                   )}
@@ -139,15 +139,15 @@ const Dashboard = () => {
                   onClick={clearFilters}
                   aria-pressed={!hasFilter}
                   className={cn(
-                    'flex h-[38px] items-center rounded-sm border px-3.5 text-[13px] transition-colors duration-fast',
+                    'flex h-[38px] items-center rounded-md border px-3.5 text-sm transition-colors duration-fast',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    !hasFilter ? 'border-white/[0.09] bg-white/[0.07] text-foreground' : 'border-white/[0.09] text-muted-foreground hover:text-foreground',
+                    !hasFilter ? 'border-border bg-secondary text-foreground' : 'border-border text-muted-foreground hover:text-foreground',
                   )}
                 >
                   All stages
                 </button>
                 {statusFilter && (
-                  <span className={cn('flex h-[38px] items-center rounded-sm px-3.5 text-[13px]', TONE_CHIP[STAGE_TONES[statusFilter]])}>
+                  <span className={cn('flex h-[38px] items-center rounded-md px-3.5 text-sm', TONE_CHIP[STAGE_TONES[statusFilter]])}>
                     {statusFilter}
                   </span>
                 )}
@@ -158,18 +158,18 @@ const Dashboard = () => {
                   aria-pressed={stalledOnly}
                   disabled={stalledCount === 0}
                   className={cn(
-                    'flex h-[38px] items-center gap-2 rounded-sm border px-3.5 text-[13px] transition-colors duration-fast',
+                    'flex h-[38px] items-center gap-2 rounded-md border px-3.5 text-sm transition-colors duration-fast',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45',
                     stalledOnly
                       ? 'border-stall/70 bg-stall/[0.14] text-stall-foreground'
                       : 'border-stall/35 bg-stall/[0.08] text-stall-foreground hover:border-stall/60',
                   )}
                 >
-                  Stalled {STALLED_AFTER_DAYS}d+ · <span className="font-mono">{stalledCount}</span>
+                  Stalled {STALLED_AFTER_DAYS}d+ · <span className="tabular-nums">{stalledCount}</span>
                 </button>
                 {hasFilter && (
                   <>
-                    <span className="ml-auto font-mono text-[12px] text-subtle">
+                    <span className="ml-auto tabular-nums text-xs text-subtle">
                       {visibleAccounts.length} of {accounts.length}
                     </span>
                     <Button variant="ghost" size="sm" onClick={clearFilters}>Clear</Button>
@@ -182,21 +182,21 @@ const Dashboard = () => {
               {isLoading ? (
                 <div className="flex items-center justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
               ) : error ? (
-                <div className="rounded-sm border border-destructive/25 bg-destructive/[0.08] p-6 text-center">
+                <div className="rounded-lg border border-destructive/25 bg-destructive/[0.08] p-6 text-center">
                   <AlertCircle className="mx-auto mb-3 h-7 w-7 text-destructive" />
                   <p className="mb-4 text-destructive-foreground">{error instanceof Error ? error.message : 'Failed to load accounts'}</p>
                   <Button variant="outline" onClick={() => refetch()}>Retry</Button>
                 </div>
               ) : accounts.length === 0 ? (
-                <div className="rounded-sm border border-border bg-card p-12 text-center">
+                <div className="rounded-lg border border-border bg-card p-12 text-center">
                   <Landmark className="mx-auto mb-4 h-10 w-10 text-dim" />
-                  <p className="mb-1 font-display text-lg text-foreground">No clients yet</p>
-                  <p className="text-[13.5px] text-muted-foreground">Clients appear here once they’re routed to a bank</p>
+                  <p className="mb-1 text-lg text-foreground">No clients yet</p>
+                  <p className="text-sm text-muted-foreground">Clients appear here once they’re routed to a bank</p>
                 </div>
               ) : visibleAccounts.length === 0 ? (
-                <div className="rounded-sm border border-border bg-card p-12 text-center">
-                  <p className="mb-1 font-display text-lg text-foreground">Nothing matches this filter</p>
-                  <p className="mb-4 text-[13.5px] text-muted-foreground">
+                <div className="rounded-lg border border-border bg-card p-12 text-center">
+                  <p className="mb-1 text-lg text-foreground">Nothing matches this filter</p>
+                  <p className="mb-4 text-sm text-muted-foreground">
                     {stalledOnly && statusFilter ? `No ${statusFilter} client has been sitting for ${STALLED_AFTER_DAYS} days or more`
                       : stalledOnly ? `Nothing has been sitting for ${STALLED_AFTER_DAYS} days or more`
                       : `Nothing is currently in ${statusFilter}`}
@@ -204,16 +204,16 @@ const Dashboard = () => {
                   <Button variant="outline" onClick={clearFilters}>Show all clients</Button>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-sm border border-border bg-card">
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border hover:bg-transparent">
-                          <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Client</TableHead>
-                          <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Email</TableHead>
-                          {isAdmin && <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Bank</TableHead>}
-                          <TableHead className="h-auto py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-subtle">Stage</TableHead>
-                          <TableHead className="h-auto py-3 text-right text-[12px] font-medium uppercase tracking-[0.1em] text-subtle whitespace-nowrap">Days since status change</TableHead>
+                          <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Client</TableHead>
+                          <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Email</TableHead>
+                          {isAdmin && <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Bank</TableHead>}
+                          <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Stage</TableHead>
+                          <TableHead className="h-auto py-3 text-right text-xs font-medium text-subtle whitespace-nowrap">Days since status change</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -227,7 +227,7 @@ const Dashboard = () => {
                           return (
                             <TableRow
                               key={acc.id}
-                              className={cn('h-11 border-white/[0.045] hover:bg-white/[0.05]', stalled && 'bg-stall/[0.05]')}
+                              className={cn('h-11 border-border hover:bg-secondary', stalled && 'bg-stall/[0.05]')}
                             >
                               <TableCell className="py-0">
                                 <div className="flex min-w-0 items-center gap-2.5">
@@ -235,11 +235,11 @@ const Dashboard = () => {
                                       scanning, quiet when reading one record. */}
                                   <span className={cn('h-[22px] w-[3px] flex-none rounded-sm',
                                     stalled ? 'bg-stall' : acc.status === 'Lost' ? 'bg-lost/50' : 'bg-transparent')} />
-                                  <span className="truncate text-[13.5px] text-foreground">{acc.client_name || '—'}</span>
+                                  <span className="truncate text-sm text-foreground">{acc.client_name || '—'}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="py-0 text-[13px] text-stage-neutral">{acc.email || '—'}</TableCell>
-                              {isAdmin && <TableCell className="py-0 font-mono text-[12px] tracking-[0.06em] text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
+                              <TableCell className="py-0 text-sm text-stage-neutral">{acc.email || '—'}</TableCell>
+                              {isAdmin && <TableCell className="py-0 tabular-nums text-xs text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
                               <TableCell className="py-0">
                                 <Select
                                   value={acc.status || undefined}
@@ -250,7 +250,7 @@ const Dashboard = () => {
                                       that shows the stage and changes it, rather
                                       than a chip sitting next to a control. */}
                                   <SelectTrigger className={cn(
-                                    'h-6 w-auto gap-1.5 whitespace-nowrap rounded-sm border-0 px-2.5 text-[12px] [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-45',
+                                    'h-6 w-auto gap-1.5 whitespace-nowrap rounded-full border-0 px-2.5 text-xs [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-45',
                                     acc.status ? TONE_CHIP[STAGE_TONES[acc.status]] : 'bg-muted text-subtle',
                                   )}>
                                     {isUpdating === acc.id ? (
@@ -264,19 +264,19 @@ const Dashboard = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {BANK_ACCOUNT_STATUSES.map((s) => (
-                                      <SelectItem key={s} value={s} className="text-[13px]">{s}</SelectItem>
+                                      <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               </TableCell>
                               <TableCell className="py-0">
                                 <div className="flex items-center justify-end gap-2.5">
-                                  <div className="h-1 w-14 overflow-hidden rounded-sm bg-white/[0.06]">
+                                  <div className="h-1 w-14 overflow-hidden rounded-sm bg-secondary">
                                     <div className={cn('h-1 rounded-sm',
                                       stalled ? 'bg-stall' : days !== null && days >= 15 ? 'bg-stage-gold' : 'bg-stage-info')}
                                       style={{ width: `${agePct}%` }} />
                                   </div>
-                                  <span className={cn('min-w-[62px] text-right font-mono text-[13.5px]',
+                                  <span className={cn('min-w-[62px] text-right tabular-nums text-sm',
                                     stalled ? 'text-stall-foreground' : settled ? 'text-subtle' : 'text-foreground')}>
                                     {settled ? '—' : formatDaysSince(days)}
                                   </span>
@@ -288,8 +288,8 @@ const Dashboard = () => {
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
-                    <span className="font-mono text-[12px] text-subtle">
+                  <div className="flex items-center justify-between border-t border-border px-4 py-3">
+                    <span className="tabular-nums text-xs text-subtle">
                       Showing {visibleAccounts.length === accounts.length ? `all ${accounts.length}` : `${visibleAccounts.length} of ${accounts.length}`} record{accounts.length === 1 ? '' : 's'}
                     </span>
                   </div>

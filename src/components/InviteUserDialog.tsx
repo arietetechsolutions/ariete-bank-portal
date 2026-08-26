@@ -58,7 +58,7 @@ export const InviteUserDialog = ({ banks, onSuccess }: InviteUserDialogProps) =>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">Invite New User</DialogTitle>
+          <DialogTitle className="text-xl">Invite New User</DialogTitle>
           <DialogDescription>Send an email invitation with access credentials.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

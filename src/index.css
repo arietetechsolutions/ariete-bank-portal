@@ -1,84 +1,91 @@
-/* Ariete Capital design system — Playfair Display for display/page titles,
-   Montserrat for UI, Fragment Mono for every figure. The mono is not
-   decorative: counts, day tallies and shares are the proof points on this
-   dashboard, and tabular figures stop them jittering as they update. */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Fragment+Mono&display=swap');
+/* Ariete Capital internal-tools design system.
+   One family, Plus Jakarta Sans — no display face, no mono. Figures stay
+   tabular via font-variant-numeric rather than a second family, because the
+   counts and shares on this dashboard still must not jitter as they refetch. */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Legibility rules for this palette, learned the hard way over two passes:
-   1. Ratio is necessary, not sufficient. 7:1 at 10.5px in a thin mono still
-      reads as mush. Nothing sits below 12px any more, and small labels carry
-      weight 500 rather than 400.
-   2. Every token is measured against the surface it actually sits on, and
-      small text targets 8:1+, not the 4.5:1 AA floor.
-   3. Never stack an opacity utility on these tokens - halving the alpha of an
-      already-recessive colour took a dormant card to 1.5:1.
-   4. Four greys, not six. Each tier must be distinguishable from its
-      neighbour at a glance or it is just another illegible shade. */
+/* Two deliberate deviations from the extracted system, both measured:
+
+   1. muted-foreground. The system ships 215 20% 55%, which is 5.42:1 on this
+      background. This app has 27 small-text sites and a documented 8:1 target
+      for them, so the hue is the system's and the lightness is held at 74%
+      (9.98:1). subtle and dormant continue below it for the same reason.
+   2. primary-foreground. The system ships near-white on gold, which measures
+      2.81:1 and fails even the AA-large 3:1 floor. Near-black on the same gold
+      is 6.62:1.
+
+   The legibility rules from the previous two passes still hold, and the
+   numbers below are re-measured against these surfaces:
+     - Nothing sits below 12px; small labels carry weight 500, not 400.
+     - Never stack an opacity utility on a recessive token — halving the alpha
+       of an already-dim colour is what took a dormant card to 1.5:1.
+     - Four greys, not six. Each tier must be distinguishable at a glance. */
 @layer base {
   :root {
-    /* Matte near-black navy, locked. Values are the design's exact hexes
-       converted to HSL triplets so Tailwind's opacity modifiers
-       (bg-card/50, bg-primary/20) still resolve. */
-    --background: 224 41% 7.3%;      /* #0B0F1A page */
-    --foreground: 220 40% 94.1%;     /* #EAEEF6  14.8:1 on page */
-    --sidebar: 223 44% 6.3%;         /* #090D17  recessed chrome */
-    --card: 223 39% 9%;              /* #0E1320  +1 step of light */
-    --card-foreground: 220 40% 94.1%;
-    --popover: 223 39% 9%;
-    --popover-foreground: 220 40% 94.1%;
+    /* Five near-black slate steps, from the system. The hue is a consistent
+       cool slate — never neutral grey, never warm. */
+    --background: 222 47% 6%;
+    --foreground: 210 20% 95%;        /* 17.4:1 on page */
+    --sidebar: 222 47% 8%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 20% 95%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 20% 95%;
 
-    /* Rust is the single accent — active nav, one CTA per view. Never
-       combined with gold in the same element. */
-    --primary: 25 79% 56.9%;         /* #E8833A */
-    --primary-foreground: 224 41% 7.3%;
-    --accent: 25 79% 56.9%;
-    --accent-foreground: 224 41% 7.3%;
+    /* The system's single brand colour. primary === accent === ring. */
+    --primary: 26 82% 52%;
+    --primary-foreground: 222 47% 6%;   /* 6.62:1 — see deviation 2 above */
+    --accent: 26 82% 52%;
+    --accent-foreground: 222 47% 6%;
+    --ring: 26 82% 52%;
 
-    --secondary: 222 37% 12.4%;      /* #141B2B raised */
-    --secondary-foreground: 220 40% 94.1%;
-    --muted: 222 37% 12.4%;
-    --muted-foreground: 220 14% 74.1%;   /* #B4BAC6  9.5:1 */
-    --subtle: 221 14% 68.6%;             /* #A4ABBA  8.1:1 */
-    --dim: 221 16% 68.8%;                /* #A3ABBC  8.0:1 - folded up to the same
-                                            tier as --subtle. Six shades of grey was
-                                            three too many, and the bottom three
-                                            were all illegible. */
-    --dormant: 219 18% 60.2%;            /* #8794AC  6.1:1 */
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20% 74%;    /* 9.98:1 — see deviation 1 above */
 
-    /* Hairline rules, flattened from rgba(255,255,255,.07/.09) over the page
-       so they stay stable on any surface rather than compounding. */
-    --border: 223 20% 13.7%;
-    --input: 223 18% 15.7%;
-    --ring: 25 79% 56.9%;
+    /* Three steps below muted-foreground, for column labels, placeholders and
+       the figures on a stage nobody is sitting in. */
+    --subtle: 215 16% 69%;              /* 8.67:1 */
+    --dim: 215 16% 69%;                 /* folded to the same tier as subtle */
+    --dormant: 215 18% 60%;             /* 6.47:1 */
 
-    /* Stage colours encode WHO YOU ARE WAITING ON, not position in the
-       funnel - that is the whole point of the palette. Two stages sharing a
-       colour share a next action. */
-    --stage-neutral: 218 18% 70.8%;  /* #A7B1C2 early, no external dependency (8.6:1) */
-    --stage-info: 212 60% 59.8%;     /* #5B95D6 our action pending */
-    --stage-gold: 40 48% 57.5%;      /* #C7A45E waiting on client or bank */
-    --stage-ok: 155 44% 44.3%;       /* #3FA37A investment executed */
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
 
-    --stall: 4 64% 57.6%;            /* #D8574E 30d+ alarm, always with a number */
-    --stall-foreground: 4 65% 70.6%; /* #E58A83 */
-    --lost: 333 11% 48.8%;           /* #8A6F7B inert plum-grey, not alarming */
-    --lost-foreground: 320 13% 67.6%;/* #B7A2B0  8.0:1 */
+    /* Stage colours encode WHO YOU ARE WAITING ON, not position in the funnel.
+       Two stages sharing a colour share a next action. The system has no
+       counterpart for a pipeline state machine, so this layer is kept and
+       re-hued onto its nearest neighbours. Each tone carries a base for
+       bars and flags plus a lighter fg for chip text, because a low-alpha
+       chip needs its label a step brighter to stay readable on the tint. */
+    --stage-neutral: 215 18% 71%;    /* early, no external dependency (9.2:1) */
+    --stage-info: 217 91% 60%;       /* our action pending — system info */
+    --stage-gold: 38 92% 50%;        /* waiting on client or bank — system warning */
+    --stage-ok: 142 76% 36%;         /* investment executed — system success */
 
-    --destructive: 4 64% 57.6%;
-    --destructive-foreground: 220 40% 94.1%;
-    --success: 155 44% 44.3%;
-    --success-foreground: 220 40% 94.1%;
-    --warning: 40 48% 57.5%;
-    --warning-foreground: 224 41% 7.3%;
+    --stall: 0 72% 51%;              /* 30d+ alarm, always with a number */
+    --stall-foreground: 0 65% 72%;
+    --lost: 333 11% 49%;             /* inert plum-grey, not alarming */
+    --lost-foreground: 320 13% 68%;
 
-    /* Near-square corners. The brand reads institutional, not friendly. */
-    --radius: 3px;
-    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.06);
-    --shadow-raised: 0 4px 16px hsl(0 0% 0% / 0.08);
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 20% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 20% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 6%;
+    --info: 217 91% 60%;
+
+    /* 12px cards, 10px controls, 8px small. Nothing square-cornered. */
+    --radius: 12px;
+    --shadow-card: 0 4px 32px -8px hsl(0 0% 0% / 0.4);
+    --shadow-gold: 0 4px 24px -4px hsl(26 82% 52% / 0.25);
+    --shadow-raised: 0 10px 15px -3px hsl(0 0% 0% / 0.5);
   }
 }
 
@@ -87,22 +94,30 @@
   html, body, #root { @apply min-h-screen min-w-full; }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Montserrat', -apple-system, Helvetica, Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     font-feature-settings: 'kern' 1;
   }
   /* Every figure in the app is tabular — counts that change width as they
-     update make a table twitch on every refetch. */
-  .font-mono, [class*="font-mono"] { font-variant-numeric: tabular-nums; }
+     update make a table twitch on every refetch. This used to ride on the
+     mono family; the family is gone, the behaviour is not. */
+  .tabular-nums, [class*="tabular-nums"] { font-variant-numeric: tabular-nums; }
+
+  /* Focus is a 2px gold ring offset from the background. The border colour
+     never changes on focus. */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+  }
 }
 
 @layer utilities {
-  /* Display face, reserved for page titles and section headers. Never body. */
-  .font-display { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
-  /* Tracked small caps — the only uppercase in the system besides the wordmark. */
-  .eyebrow { @apply text-[12px] font-medium uppercase text-subtle; letter-spacing: 0.11em; }
+  /* Section label. The system allows no ALL-CAPS anywhere, so what used to be
+     a tracked small-caps eyebrow is now Title Case at badge size. */
+  .eyebrow { @apply text-xs font-semibold text-subtle; }
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-raised { box-shadow: var(--shadow-raised); }
-  /* Flat surfaces only — the design system rules out gradients outright.
+  .shadow-gold { box-shadow: var(--shadow-gold); }
+  /* Flat surfaces only — the system rules out gradients on these screens.
      Kept as a class so the old call sites read as deliberate, not stale. */
   .bg-surface { background-color: hsl(var(--card)); }
 }
