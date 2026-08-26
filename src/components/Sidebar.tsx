@@ -25,7 +25,7 @@ export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
                 block - the accent is allowed one appearance per view and a
                 solid rust button would spend it on navigation. */}
             <Link to={item.href} onClick={onNavigate} className={cn(
-              "flex items-center gap-2.5 rounded-md border-l-2 px-3 py-2.5 text-sm transition-colors duration-fast",
+              "flex items-center gap-2.5 rounded-md border-l-2 px-3 py-2.5 text-base transition-colors duration-fast",
               isActive
                 ? "border-primary bg-primary/[0.12] font-semibold text-primary"
                 : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
