@@ -202,7 +202,7 @@ export const BulkInviteDialog = ({ banks, onSuccess }: BulkInviteDialogProps) =>
                   className="bg-secondary border-border text-foreground min-h-[140px] resize-y tabular-nums text-sm"
                   disabled={isLoading}
                 />
-                <div className="text-xs text-muted-foreground space-y-0.5">
+                <div className="text-sm text-muted-foreground space-y-0.5">
                   <p>One entry per line: <span className="tabular-nums">email, contact name</span></p>
                   {parsedEntries.length > 0 && (
                     <p className="text-foreground">

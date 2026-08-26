@@ -70,10 +70,20 @@ export default {
       transitionDuration: { fast: "150ms", normal: "200ms", slow: "300ms", enter: "500ms" },
       transitionTimingFunction: { standard: "cubic-bezier(0, 0, 0.2, 1)" },
       letterSpacing: { tight: "-0.015em" },
+      // Lifted off the system's scale after readability complaints from both
+      // teams. The system's own sizes "stay small" by design — 12px meta,
+      // 14px workhorse — which is too tight for these dense, all-day tools.
+      // Every step below 16px gains a point, and the stat figures go back to
+      // the size they were before the migration.
       fontSize: {
-        "2xs": ["10px", "1.5"], xs: ["12px", "1.5"], sm: ["14px", "1.5"],
-        base: ["16px", "1.5"], lg: ["18px", "1.25"], xl: ["20px", "1.25"],
-        "2xl": ["24px", "1.25"], "3xl": ["30px", "1.25"],
+        "2xs": ["11px", "1.5"],
+        xs: ["13px", "1.5"],
+        sm: ["15px", "1.5"],
+        base: ["16px", "1.5"],
+        lg: ["19px", "1.3"],
+        xl: ["21px", "1.25"],
+        "2xl": ["26px", "1.2"],
+        "3xl": ["32px", "1.15"],
       },
     },
   },

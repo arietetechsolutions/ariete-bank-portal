@@ -51,7 +51,7 @@ const Header = () => {
           <div className="flex items-center gap-2.5">
             <div className="flex flex-col items-end gap-0.5">
               <span className="text-sm text-foreground">{displayName}</span>
-              <span className="text-xs font-medium text-subtle">{isAdmin ? 'Admin' : (bankName || 'Bank staff')}</span>
+              <span className="text-sm font-medium text-subtle">{isAdmin ? 'Admin' : (bankName || 'Bank staff')}</span>
             </div>
             <span className="flex h-8 w-8 flex-none items-center justify-center rounded-md border border-border bg-secondary tabular-nums text-xs text-muted-foreground">
               {initials}

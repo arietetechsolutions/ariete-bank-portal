@@ -91,7 +91,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
             >
               <div className="flex items-start gap-1.5">
                 <span className="tabular-nums text-xs font-medium leading-[1.4] text-dim">{s.num}</span>
-                <span className="min-h-[34px] text-xs leading-[1.4] text-muted-foreground">
+                <span className="min-h-[34px] text-sm leading-[1.4] text-muted-foreground">
                   {STAGE_SHORT_LABELS[s.status]}
                 </span>
               </div>
@@ -136,7 +136,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
           statusFilter === TERMINAL_STATUS ? 'border-lost bg-lost/[0.08]' : 'border-lost/45 hover:border-lost/80',
         )}
       >
-        <div className="min-h-[34px] text-xs text-lost-foreground">Lost · terminal</div>
+        <div className="min-h-[34px] text-sm text-lost-foreground">Lost · terminal</div>
         <div className="tabular-nums text-3xl leading-none text-lost-foreground">{lostCount}</div>
         <div className="tabular-nums text-xs font-medium text-subtle">{lostRatePct}% of all records</div>
       </button>

@@ -93,7 +93,7 @@ const Auth = () => {
               {isLoading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</>) : 'Sign in'}
             </Button>
           </form>
-          <p className="text-center text-xs text-muted-foreground mt-6">Access by invitation only</p>
+          <p className="text-center text-sm text-muted-foreground mt-6">Access by invitation only</p>
         </CardContent>
       </Card>
     </div>

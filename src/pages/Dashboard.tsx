@@ -209,11 +209,11 @@ const Dashboard = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border hover:bg-transparent">
-                          <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Client</TableHead>
-                          <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Email</TableHead>
-                          {isAdmin && <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Bank</TableHead>}
-                          <TableHead className="h-auto py-3 text-xs font-medium text-subtle">Stage</TableHead>
-                          <TableHead className="h-auto py-3 text-right text-xs font-medium text-subtle whitespace-nowrap">Days since status change</TableHead>
+                          <TableHead className="h-auto py-3 text-xs font-semibold text-subtle">Client</TableHead>
+                          <TableHead className="h-auto py-3 text-xs font-semibold text-subtle">Email</TableHead>
+                          {isAdmin && <TableHead className="h-auto py-3 text-xs font-semibold text-subtle">Bank</TableHead>}
+                          <TableHead className="h-auto py-3 text-xs font-semibold text-subtle">Stage</TableHead>
+                          <TableHead className="h-auto py-3 text-right text-xs font-semibold text-subtle whitespace-nowrap">Days since status change</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -239,7 +239,7 @@ const Dashboard = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="py-0 text-sm text-stage-neutral">{acc.email || '—'}</TableCell>
-                              {isAdmin && <TableCell className="py-0 tabular-nums text-xs text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
+                              {isAdmin && <TableCell className="py-0 tabular-nums text-sm text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
                               <TableCell className="py-0">
                                 <Select
                                   value={acc.status || undefined}
