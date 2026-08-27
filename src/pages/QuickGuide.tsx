@@ -13,10 +13,12 @@ import {
    a login and nothing else: formal register throughout, no jargon, and no
    mention of how any of it is wired up.
 
-   Every stage line in the table ends in the action required. The funnel
-   diagram carries stage names and colours only - it used to label each stage
-   with the responsible party (Bank / Ariete / Client), which was dropped: the
-   bank performs the work at every stage, so the label had nothing to say.
+   The bank performs and records every stage, so every line in the stage table
+   ends in an instruction. Two earlier drafts got this wrong: the first
+   repeated "You: Nothing" down four rows, the second replaced it with "No
+   action required" and handed those stages to Ariete. The funnel diagram
+   carries stage names and colours only, for the same reason - a
+   responsible-party label under each circle had nothing to distinguish.
 
    The stage list and the funnel diagram are both generated from FUNNEL_STAGES,
    so a stage added to src/types/bankAccount.ts appears in both and a missing
@@ -70,37 +72,37 @@ const STAGE_COPY: Record<BankAccountStatus, StageCopy> = {
   'Onboarding': {
     lines: ['Onboarding'],
     what: 'Documentation is being collected and the bank’s checks are in progress.',
-    action: 'Complete onboarding, then record the account as opened.',
+    action: 'Complete onboarding, then set the stage to Account Opened.',
   },
   'Account Opened': {
     lines: ['Account', 'opened'],
-    what: 'The account is active and able to receive funds.',
-    action: 'No action required. Ariete issues the transfer instructions to the client.',
+    what: 'The account is live and able to receive funds.',
+    action: 'Once the client holds the transfer instructions, set the stage to Waiting for transfer.',
   },
   'Waiting for transfer': {
     lines: ['Waiting for', 'transfer'],
-    what: 'The client holds the transfer instructions and the funds have not yet arrived.',
-    action: 'No action required. Await receipt of the funds.',
+    what: 'The transfer instructions are with the client and the funds have not yet arrived.',
+    action: 'Watch for the funds, and set the stage on the day they land.',
   },
   'Transfer made - waiting for AML letter': {
     lines: ['Transfer made', 'awaiting AML'],
     what: 'The funds have been received.',
-    action: 'Issue the AML / source-of-funds letter.',
+    action: 'Issue the AML / source-of-funds letter, then set the stage to AML Letter Issued.',
   },
   'AML Letter Issued': {
     lines: ['AML letter', 'issued'],
-    what: 'The bank’s obligations for this client are complete.',
-    action: 'No action required. Ariete executes the investment.',
+    what: 'The AML / source-of-funds letter has been issued.',
+    action: 'Set the stage to Investment executed once the investment is complete.',
   },
   'Investment executed': {
     lines: ['Investment', 'executed'],
-    what: 'The client has completed the pipeline.',
-    action: 'No action required. This is the final stage.',
+    what: 'The investment has been completed and the client is through the pipeline.',
+    action: 'This is the final stage; nothing follows it.',
   },
   'Lost': {
     lines: ['Lost'],
     what: 'The client withdrew, was declined, or has become unresponsive.',
-    action: 'Record this stage so that the client is no longer pursued.',
+    action: 'Set this stage at any point, so that the client is no longer pursued.',
   },
 };
 
