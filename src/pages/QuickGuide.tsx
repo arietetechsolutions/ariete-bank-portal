@@ -342,7 +342,7 @@ const QuickGuide = () => (
             <StepHead
               step={3}
               title="Recording a change of stage."
-              lead="Select the new stage on the client’s row and confirm. Any stage may be selected, including an earlier one, should a stage be recorded in error."
+              lead="Select the new stage on the client’s row and confirm. Any stage may be selected, including an earlier one."
             />
             <Figure caption="The change is recorded on confirmation and is visible to Ariete immediately." minWidth={660}>
               <UpdateDiagram />
