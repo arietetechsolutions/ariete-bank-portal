@@ -13,9 +13,10 @@ import {
    a login and nothing else: formal register throughout, no jargon, and no
    mention of how any of it is wired up.
 
-   Every stage line ends in the action required of the bank, and the four
-   stages that require nothing say so once, in the same form - the earlier
-   draft repeated "You: Nothing" down the table.
+   Every stage line in the table ends in the action required. The funnel
+   diagram carries stage names and colours only - it used to label each stage
+   with the responsible party (Bank / Ariete / Client), which was dropped: the
+   bank performs the work at every stage, so the label had nothing to say.
 
    The stage list and the funnel diagram are both generated from FUNNEL_STAGES,
    so a stage added to src/types/bankAccount.ts appears in both and a missing
@@ -54,8 +55,6 @@ const INK = {
 interface StageCopy {
   /** Diagram label, split where the artboard needs two lines. */
   lines: string[];
-  /** The party responsible for the next action. Omitted on the final stage. */
-  actor?: string;
   /** What the stage means, in one sentence. */
   what: string;
   /** The action required, emphasised at the end of the sentence. */
@@ -64,32 +63,32 @@ interface StageCopy {
 
 const STAGE_COPY: Record<BankAccountStatus, StageCopy> = {
   'Registered': {
-    lines: ['Registered'], actor: 'Bank',
+    lines: ['Registered'],
     what: 'Ariete has assigned a new client to your bank.',
     action: 'Begin the account opening process.',
   },
   'Onboarding': {
-    lines: ['Onboarding'], actor: 'Bank',
+    lines: ['Onboarding'],
     what: 'Documentation is being collected and the bank’s checks are in progress.',
     action: 'Complete onboarding, then record the account as opened.',
   },
   'Account Opened': {
-    lines: ['Account', 'opened'], actor: 'Ariete',
+    lines: ['Account', 'opened'],
     what: 'The account is active and able to receive funds.',
     action: 'No action required. Ariete issues the transfer instructions to the client.',
   },
   'Waiting for transfer': {
-    lines: ['Waiting for', 'transfer'], actor: 'Client',
+    lines: ['Waiting for', 'transfer'],
     what: 'The client holds the transfer instructions and the funds have not yet arrived.',
     action: 'No action required. Await receipt of the funds.',
   },
   'Transfer made - waiting for AML letter': {
-    lines: ['Transfer made', 'awaiting AML'], actor: 'Bank',
+    lines: ['Transfer made', 'awaiting AML'],
     what: 'The funds have been received.',
     action: 'Issue the AML / source-of-funds letter.',
   },
   'AML Letter Issued': {
-    lines: ['AML letter', 'issued'], actor: 'Ariete',
+    lines: ['AML letter', 'issued'],
     what: 'The bank’s obligations for this client are complete.',
     action: 'No action required. Ariete executes the investment.',
   },
@@ -129,14 +128,14 @@ const StepHead = ({ step, title, lead }: { step: number; title: string; lead?: s
   </div>
 );
 
-/** A diagram with its caption. Scrolls sideways rather than shrinking, so the
- *  labels never drop below the 12px floor on a narrow screen. */
-const Figure = ({ caption, minWidth, children }: { caption: string; minWidth: number; children: React.ReactNode }) => (
+/** A diagram, with an optional caption. Scrolls sideways rather than shrinking,
+ *  so the labels never drop below the 12px floor on a narrow screen. */
+const Figure = ({ caption, minWidth, children }: { caption?: string; minWidth: number; children: React.ReactNode }) => (
   <figure className="flex flex-col gap-3">
     <div className="overflow-x-auto">
       <div style={{ minWidth, maxWidth: '100%' }}>{children}</div>
     </div>
-    <figcaption className="text-xs leading-[1.6] text-subtle">{caption}</figcaption>
+    {caption && <figcaption className="text-xs leading-[1.6] text-subtle">{caption}</figcaption>}
   </figure>
 );
 
@@ -148,9 +147,9 @@ const FUNNEL_W = X0 * 2 + GAP * (FUNNEL_STAGES.length - 1);
 
 const FunnelDiagram = () => (
   <svg
-    viewBox={`0 0 ${Math.round(FUNNEL_W)} 168`}
+    viewBox={`0 0 ${Math.round(FUNNEL_W)} 156`}
     role="img"
-    aria-label="The stages in order, each labelled with who acts next"
+    aria-label="The stages in pipeline order, with Lost shown off the flow"
     style={{ width: '100%', height: 'auto' }}
   >
     <defs>
@@ -169,11 +168,6 @@ const FunnelDiagram = () => (
           {copy.lines.map((line, li) => (
             <text key={line} x={x} y={76 + li * 12} textAnchor="middle" fontSize="11" fill={INK.muted}>{line}</text>
           ))}
-          {copy.actor && (
-            <text x={x} y={copy.lines.length > 1 ? 106 : 94} textAnchor="middle" fontSize="10" fill={INK.subtle}>
-              {copy.actor}
-            </text>
-          )}
           {i < FUNNEL_STAGES.length - 1 && (
             <line
               x1={x + 15} y1="44" x2={x + GAP - 17} y2="44"
@@ -190,13 +184,13 @@ const FunnelDiagram = () => (
         thing on the page nobody could see. */}
     <g>
       <rect
-        x={X0 - 24} y="116" width="372" height="46" rx="4"
+        x={X0 - 24} y="102" width="372" height="46" rx="4"
         fill={INK.lost} fillOpacity=".12" stroke={INK.lost} strokeDasharray="6 4"
       />
-      <circle cx={X0} cy="139" r="13" fill={INK.lost} />
-      <text x={X0} y="143" textAnchor="middle" fontSize="12" fontWeight="600" fill={INK.bg}>×</text>
-      <text x={X0 + 24} y="135" fontSize="12" fill={INK.fg}>Lost</text>
-      <text x={X0 + 24} y="150" fontSize="11" fill={INK.lostFg}>May be recorded at any point</text>
+      <circle cx={X0} cy="125" r="13" fill={INK.lost} />
+      <text x={X0} y="129" textAnchor="middle" fontSize="12" fontWeight="600" fill={INK.bg}>×</text>
+      <text x={X0 + 24} y="121" fontSize="12" fill={INK.fg}>Lost</text>
+      <text x={X0 + 24} y="136" fontSize="11" fill={INK.lostFg}>May be recorded at any point</text>
     </g>
   </svg>
 );
@@ -328,7 +322,7 @@ const QuickGuide = () => (
           {/* -------------------------------------------------- Step 2 */}
           <section className="flex flex-col gap-5 px-6 pt-14 lg:px-8">
             <StepHead step={2} title={`${spellOut(FUNNEL_STAGES.length + 1)} stages, and the action each requires.`} />
-            <Figure caption="Each stage has its own colour. The word beneath a stage names the party responsible for the next action: the bank, Ariete, or the client." minWidth={700}>
+            <Figure minWidth={700}>
               <FunnelDiagram />
             </Figure>
             <div className="rounded-lg border border-border bg-card px-5 py-2">
