@@ -10,6 +10,7 @@ import AdminRoute from "./components/AdminRoute";
 import AuthCallbackHandler from "./components/AuthCallbackHandler";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
+import QuickGuide from "./pages/QuickGuide";
 import { AdminProvider } from "./hooks/useAdmin";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/set-password" element={<SetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/quick-guide" element={<ProtectedRoute><QuickGuide /></ProtectedRoute>} />
             <Route path="/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

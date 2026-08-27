@@ -1,4 +1,4 @@
-import { Landmark, Users } from 'lucide-react';
+import { BookOpen, Landmark, Users } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -8,6 +8,8 @@ interface NavItem { icon: React.ElementType; label: string; href: string; visibl
 const navItems: NavItem[] = [
   { icon: Landmark, label: 'Clients', href: '/', visible: () => true },
   { icon: Users, label: 'User Management', href: '/users', visible: (isAdmin) => isAdmin },
+  // Last, and visible to everyone: it is reference material, not a task.
+  { icon: BookOpen, label: 'Quick Guide', href: '/quick-guide', visible: () => true },
 ];
 
 export const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => {
