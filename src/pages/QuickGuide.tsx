@@ -24,10 +24,13 @@ import {
 /** SVG cannot take a Tailwind class for a fill, so the stage tones are read
  *  straight off the CSS variables. The diagrams then track the palette. */
 const TONE_FILL: Record<StageTone, string> = {
-  neutral: 'hsl(var(--stage-neutral))',
-  info: 'hsl(var(--stage-info))',
-  gold: 'hsl(var(--stage-gold))',
-  ok: 'hsl(var(--stage-ok))',
+  registered: 'hsl(var(--stage-registered))',
+  onboarding: 'hsl(var(--stage-onboarding))',
+  opened: 'hsl(var(--stage-opened))',
+  awaitingTransfer: 'hsl(var(--stage-awaiting-transfer))',
+  awaitingAml: 'hsl(var(--stage-awaiting-aml))',
+  amlIssued: 'hsl(var(--stage-aml-issued))',
+  executed: 'hsl(var(--stage-executed))',
   lost: 'hsl(var(--lost))',
 };
 
@@ -42,9 +45,10 @@ const INK = {
   lost: 'hsl(var(--lost))',
   lostFg: 'hsl(var(--lost-foreground))',
   // Chip label colours are literal hexes in the Tailwind config too - they sit
-  // a step brighter than their base so a 13%-alpha tint stays readable.
-  infoChip: '#8FBBE6',
-  goldChip: '#DCC28C',
+  // a step brighter than their base so a 13%-alpha tint stays readable. Only
+  // the two stages the mock-ups depict are needed here.
+  openedChip: '#6AB2FB',
+  awaitingTransferChip: '#4CE6D9',
 };
 
 interface StageCopy {
@@ -205,8 +209,8 @@ const UpdateDiagram = () => (
     <rect x="8" y="32" width="250" height="72" rx="3" fill={INK.card} stroke="#ffffff" strokeOpacity=".1" />
     <text x="26" y="60" fontSize="11" fill={INK.fg}>L. Rossi</text>
     <text x="26" y="78" fontSize="10" fill={INK.subtle}>l.rossi@example.com</text>
-    <rect x="132" y="54" width="112" height="22" rx="3" fill={TONE_FILL.info} fillOpacity=".13" stroke="#ffffff" strokeOpacity=".18" />
-    <text x="142" y="69" fontSize="10" fill={INK.infoChip}>Account opened</text>
+    <rect x="132" y="54" width="112" height="22" rx="3" fill={TONE_FILL.opened} fillOpacity=".13" stroke="#ffffff" strokeOpacity=".18" />
+    <text x="142" y="69" fontSize="10" fill={INK.openedChip}>Account opened</text>
     <text x="234" y="69" fontSize="9" fill={INK.subtle}>▾</text>
     <line x1="266" y1="68" x2="300" y2="68" stroke={INK.subtle} strokeOpacity=".5" strokeWidth="1.5" markerEnd="url(#qg-arrow-2)" />
 
@@ -254,8 +258,8 @@ const StalledDiagram = () => (
     <line x1="164" y1="47" x2="202" y2="47" stroke={INK.subtle} strokeOpacity=".5" strokeWidth="1.5" markerEnd="url(#qg-arrow-3)" />
     <rect x="212" y="24" width="464" height="46" rx="3" fill={INK.stall} fillOpacity=".05" stroke={INK.stall} strokeOpacity=".22" />
     <text x="232" y="52" fontSize="11" fill={INK.fg}>S. Greco</text>
-    <rect x="330" y="38" width="124" height="20" rx="3" fill={TONE_FILL.gold} fillOpacity=".13" />
-    <text x="340" y="52" fontSize="10" fill={INK.goldChip}>Waiting for transfer</text>
+    <rect x="330" y="38" width="124" height="20" rx="3" fill={TONE_FILL.awaitingTransfer} fillOpacity=".13" />
+    <text x="340" y="52" fontSize="10" fill={INK.awaitingTransferChip}>Waiting for transfer</text>
     <text x="656" y="52" textAnchor="end" fontSize="11" fill={INK.stallFg}>41d</text>
   </svg>
 );
@@ -286,7 +290,7 @@ const QuickGuide = () => (
 
           <div className="flex flex-col gap-1.5 border-b border-border px-6 py-6 lg:px-8">
             <h1 className="text-3xl leading-[1.1] text-foreground">Quick Guide</h1>
-            <p className="text-sm text-stage-neutral">How a client progresses through the portal, and what is required of the bank at each stage</p>
+            <p className="text-sm text-subtle">How a client progresses through the portal, and what is required of the bank at each stage</p>
           </div>
 
           {/* -------------------------------------------------- Step 1 */}
@@ -314,7 +318,7 @@ const QuickGuide = () => (
           {/* -------------------------------------------------- Step 2 */}
           <section className="flex flex-col gap-5 px-6 pt-14 lg:px-8">
             <StepHead step={2} title={`${spellOut(FUNNEL_STAGES.length + 1)} stages, and the action each requires.`} />
-            <Figure caption="The label beneath each stage indicates the party responsible for the next action." minWidth={700}>
+            <Figure caption="Each stage has its own colour. The word beneath a stage names the party responsible for the next action: the bank, Ariete, or the client." minWidth={700}>
               <FunnelDiagram />
             </Figure>
             <div className="rounded-lg border border-border bg-card px-5 py-2">

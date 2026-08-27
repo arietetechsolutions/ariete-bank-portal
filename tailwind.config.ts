@@ -36,18 +36,21 @@ export default {
         subtle: "hsl(var(--subtle))",
         dim: "hsl(var(--dim))",
         dormant: "hsl(var(--dormant))",
-        // Keyed to the next action, not to funnel position.
-        // Each tone carries a base (bar/flag) and a lighter fg (chip text),
-        // because a 13%-alpha chip needs its label a step brighter to stay
-        // readable against the tint.
+        // One entry per stage - see the block in index.css for why, and for
+        // the contrast figures behind each fg. Class strings must be literal
+        // for Tailwind to emit them, so StageChip maps tones to fixed classes
+        // rather than interpolating these names.
         stage: {
-          neutral: { DEFAULT: "hsl(var(--stage-neutral))", fg: "#B9C3D4" },
-          info: { DEFAULT: "hsl(var(--stage-info))", fg: "#8FBBE6" },
-          gold: { DEFAULT: "hsl(var(--stage-gold))", fg: "#DCC28C" },
-          ok: { DEFAULT: "hsl(var(--stage-ok))", fg: "#6FC49C" },
+          registered: { DEFAULT: "hsl(var(--stage-registered))", fg: "#A8B3C2" },
+          onboarding: { DEFAULT: "hsl(var(--stage-onboarding))", fg: "#BD9CF6" },
+          opened: { DEFAULT: "hsl(var(--stage-opened))", fg: "#6AB2FB" },
+          "awaiting-transfer": { DEFAULT: "hsl(var(--stage-awaiting-transfer))", fg: "#4CE6D9" },
+          "awaiting-aml": { DEFAULT: "hsl(var(--stage-awaiting-aml))", fg: "#FAC938" },
+          "aml-issued": { DEFAULT: "hsl(var(--stage-aml-issued))", fg: "#A6D85A" },
+          executed: { DEFAULT: "hsl(var(--stage-executed))", fg: "#52E086" },
         },
         stall: { DEFAULT: "hsl(var(--stall))", foreground: "hsl(var(--stall-foreground))" },
-        lost: { DEFAULT: "hsl(var(--lost))", foreground: "hsl(var(--lost-foreground))", chip: "#B9A4B2" },
+        lost: { DEFAULT: "hsl(var(--lost))", foreground: "hsl(var(--lost-foreground))", chip: "#EA90BD" },
       },
       // 12px cards, 10px controls, 8px small, pills for badges. Nothing is
       // square-cornered and nothing exceeds 12px except pills.

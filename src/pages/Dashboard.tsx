@@ -97,7 +97,7 @@ const Dashboard = () => {
                     sits in the table footer, and a "last updated" clock on a
                     view that silently refetches every 30s tells staff nothing
                     they can act on. */}
-                <p className="text-sm text-stage-neutral">
+                <p className="text-sm text-subtle">
                   {isAdmin ? 'Every client across both banks' : 'Track and update your clients’ account-opening status'}
                 </p>
               </div>
@@ -123,7 +123,7 @@ const Dashboard = () => {
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <span className="eyebrow">Pipeline · count / share / median days in stage</span>
                   {bankCounts.length > 1 && (
-                    <div className="flex gap-4 tabular-nums text-xs text-stage-neutral">
+                    <div className="flex gap-4 tabular-nums text-xs text-subtle">
                       {bankCounts.map(([name, count]) => <span key={name}>{name} {count}</span>)}
                     </div>
                   )}
@@ -238,7 +238,7 @@ const Dashboard = () => {
                                   <span className="truncate text-sm text-foreground">{acc.client_name || '—'}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="py-0 text-sm text-stage-neutral">{acc.email || '—'}</TableCell>
+                              <TableCell className="py-0 text-sm text-subtle">{acc.email || '—'}</TableCell>
                               {isAdmin && <TableCell className="py-0 tabular-nums text-sm text-muted-foreground">{acc.bank_name || '—'}</TableCell>}
                               <TableCell className="py-0">
                                 <Select
@@ -273,7 +273,7 @@ const Dashboard = () => {
                                 <div className="flex items-center justify-end gap-2.5">
                                   <div className="h-1 w-14 overflow-hidden rounded-sm bg-secondary">
                                     <div className={cn('h-1 rounded-sm',
-                                      stalled ? 'bg-stall' : days !== null && days >= 15 ? 'bg-stage-gold' : 'bg-stage-info')}
+                                      stalled ? 'bg-stall' : days !== null && days >= 15 ? 'bg-warning' : 'bg-dormant')}
                                       style={{ width: `${agePct}%` }} />
                                   </div>
                                   <span className={cn('min-w-[62px] text-right tabular-nums text-sm',

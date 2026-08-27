@@ -40,20 +40,29 @@ export interface BankAccountRecord {
   created_at: string;
 }
 
-// A stage's tone encodes WHO YOU ARE WAITING ON, not how far along the funnel
-// it sits. Two stages sharing a tone share a next action, which is why
-// "Account Opened" and "AML Letter Issued" are both `info` (ours to move) while
-// the two transfer stages are both `gold` (waiting on the client or the bank).
-export type StageTone = 'neutral' | 'info' | 'gold' | 'ok' | 'lost';
+// One tone per stage. This used to group stages by who owed the next action -
+// Registered and Onboarding both grey, the two transfer stages both gold -
+// which read as an error to anyone who had not been told the rule. The
+// indirection is kept so a tone can still be shared deliberately later, but
+// the map below must stay one-to-one unless that is the intent.
+export type StageTone =
+  | 'registered'
+  | 'onboarding'
+  | 'opened'
+  | 'awaitingTransfer'
+  | 'awaitingAml'
+  | 'amlIssued'
+  | 'executed'
+  | 'lost';
 
 export const STAGE_TONES: Record<BankAccountStatus, StageTone> = {
-  'Registered': 'neutral',
-  'Onboarding': 'neutral',
-  'Account Opened': 'info',
-  'Waiting for transfer': 'gold',
-  'Transfer made - waiting for AML letter': 'gold',
-  'AML Letter Issued': 'info',
-  'Investment executed': 'ok',
+  'Registered': 'registered',
+  'Onboarding': 'onboarding',
+  'Account Opened': 'opened',
+  'Waiting for transfer': 'awaitingTransfer',
+  'Transfer made - waiting for AML letter': 'awaitingAml',
+  'AML Letter Issued': 'amlIssued',
+  'Investment executed': 'executed',
   'Lost': 'lost',
 };
 

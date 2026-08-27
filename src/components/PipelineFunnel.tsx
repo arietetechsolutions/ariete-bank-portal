@@ -98,7 +98,7 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
               <div className="flex items-end gap-2">
                 <span className={cn(
                   'tabular-nums text-3xl leading-none',
-                  isDormant ? 'text-dormant' : s.status === 'Investment executed' ? 'text-stage-ok' : 'text-foreground',
+                  isDormant ? 'text-dormant' : s.status === 'Investment executed' ? 'text-stage-executed-fg' : 'text-foreground',
                 )}>
                   {s.count}
                 </span>
@@ -124,7 +124,8 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
       </div>
 
       {/* Lost sits off the flow, dashed and plum-grey: an exit, not a step.
-          Muted on purpose - a lost client is a fact to record, not an alarm. */}
+          Plum, not red: distinct from the stalled alarm, but no longer the
+          near-grey it was - it could not be found on the screen. */}
       <button
         type="button"
         onClick={() => onSelect(statusFilter === TERMINAL_STATUS ? null : TERMINAL_STATUS)}

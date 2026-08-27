@@ -57,21 +57,37 @@
     --border: 222 30% 18%;
     --input: 222 30% 18%;
 
-    /* Stage colours encode WHO YOU ARE WAITING ON, not position in the funnel.
-       Two stages sharing a colour share a next action. The system has no
-       counterpart for a pipeline state machine, so this layer is kept and
-       re-hued onto its nearest neighbours. Each tone carries a base for
-       bars and flags plus a lighter fg for chip text, because a low-alpha
-       chip needs its label a step brighter to stay readable on the tint. */
-    --stage-neutral: 215 18% 71%;    /* early, no external dependency (9.2:1) */
-    --stage-info: 217 91% 60%;       /* our action pending — system info */
-    --stage-gold: 38 92% 50%;        /* waiting on client or bank — system warning */
-    --stage-ok: 142 76% 36%;         /* investment executed — system success */
+    /* One colour per stage, on request from the CEO after the first onboarding
+       session: Registered and Onboarding previously shared a grey, and the two
+       transfer stages shared a gold, because tone used to encode WHO OWES THE
+       NEXT ACTION rather than which stage you are looking at. That grouping
+       read as a bug to everyone who had not been told about it. The next
+       action is now carried in words - the stage table and the label under
+       each circle in the Quick Guide - and colour identifies the stage alone.
+
+       Hues are spaced at least 33 degrees apart, except Registered (215) and
+       Account Opened (210), which are 5 degrees apart but 18% against 95%
+       saturation: a grey beside a vivid blue. Each stage carries a base for
+       bars, flags and diagram circles plus a lighter fg for chip text,
+       because a 13%-alpha chip needs its label a step brighter to stay
+       readable on the tint. Every fg below is >= 7:1 on both the chip tint
+       and the page; every base is >= 6:1 against a card. */
+    --stage-registered: 215 18% 71%;          /* slate  */
+    --stage-onboarding: 262 84% 72%;          /* violet */
+    --stage-opened: 210 95% 62%;              /* blue   */
+    --stage-awaiting-transfer: 175 75% 48%;   /* teal   */
+    --stage-awaiting-aml: 45 95% 56%;         /* amber  */
+    --stage-aml-issued: 84 62% 55%;           /* lime   */
+    --stage-executed: 142 70% 45%;            /* green  */
 
     --stall: 0 72% 51%;              /* 30d+ alarm, always with a number */
     --stall-foreground: 0 65% 72%;
-    --lost: 333 11% 49%;             /* inert plum-grey, not alarming */
-    --lost-foreground: 320 13% 68%;
+    /* Lost was an inert plum-grey at 11% saturation, on the reasoning that a
+       lost client is a fact to record and not an alarm. It was too faint to
+       find on the screen, so it is now a full plum - distinct from the red
+       used for stalled, and 6.35:1 against a card. */
+    --lost: 330 68% 66%;
+    --lost-foreground: 330 68% 74%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
