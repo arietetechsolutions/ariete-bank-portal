@@ -123,23 +123,38 @@ const PipelineFunnel = ({ accounts, statusFilter, onSelect }: PipelineFunnelProp
         })}
       </div>
 
-      {/* Lost sits off the flow, dashed and plum-grey: an exit, not a step.
-          Plum, not red: distinct from the stalled alarm, but no longer the
-          near-grey it was - it could not be found on the screen. */}
+      {/* Lost sits off the flow - dashed border, and it is not part of the
+          left-to-right count - but it is no longer recessed below card level
+          with a 45%-opacity edge. It carries a plum wash, a full-strength
+          edge, an x where a stage tile carries its number, and the same bar
+          the stage tiles have, because at background/60 nobody could find
+          it. */}
       <button
         type="button"
         onClick={() => onSelect(statusFilter === TERMINAL_STATUS ? null : TERMINAL_STATUS)}
         aria-pressed={statusFilter === TERMINAL_STATUS}
         className={cn(
-          'flex w-[150px] flex-none flex-col gap-3 rounded-lg border border-dashed bg-background/60 p-3.5 text-left',
-          'transition-colors duration-normal hover:bg-lost/[0.08]',
+          'flex w-[150px] flex-none flex-col gap-3 rounded-lg p-3.5 text-left',
+          // Dashed still, but at full strength: 70% of the plum measures
+          // 3.69:1 against the page and full strength is 6.54:1.
+          'border border-dashed border-lost bg-lost/[0.10]',
+          'transition-colors duration-normal hover:bg-lost/[0.16]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          statusFilter === TERMINAL_STATUS ? 'border-lost bg-lost/[0.08]' : 'border-lost/45 hover:border-lost/80',
+          statusFilter === TERMINAL_STATUS && 'bg-lost/[0.16]',
         )}
       >
-        <div className="min-h-[34px] text-sm text-lost-foreground">Lost · terminal</div>
-        <div className="tabular-nums text-3xl leading-none text-lost-foreground">{lostCount}</div>
-        <div className="tabular-nums text-xs font-medium text-subtle">{lostRatePct}% of all records</div>
+        <div className="flex items-start gap-1.5">
+          <span className="text-xs font-medium leading-[1.4] text-lost-chip">×</span>
+          <span className="min-h-[34px] text-sm leading-[1.4] text-lost-foreground">Lost</span>
+        </div>
+        <div className="flex items-end gap-2">
+          <span className="tabular-nums text-3xl leading-none text-lost-foreground">{lostCount}</span>
+          <span className="pb-1 tabular-nums text-xs text-subtle">{lostRatePct}%</span>
+        </div>
+        <div className="h-1 overflow-hidden rounded-sm bg-secondary">
+          <div className="h-1 rounded-sm bg-lost" style={{ width: `${lostRatePct}%` }} />
+        </div>
+        <div className="tabular-nums text-xs font-medium text-subtle">of all records</div>
       </button>
     </div>
   );

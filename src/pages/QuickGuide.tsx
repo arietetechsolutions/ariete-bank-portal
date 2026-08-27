@@ -184,10 +184,20 @@ const FunnelDiagram = () => (
       );
     })}
 
-    {/* Lost sits off the flow, dashed: an exit available at any point rather
-        than a step everyone passes through. */}
-    <rect x={X0} y="124" width="300" height="34" rx="3" fill="none" stroke={INK.lost} strokeOpacity=".5" strokeDasharray="5 4" />
-    <text x={X0 + 18} y="145" fontSize="11" fill={INK.lostFg}>Lost — may be recorded at any point</text>
+    {/* Lost is off the flow - dashed, below the row, no arrow into it - but it
+        gets the same plum circle the funnel stages get, a tinted fill and a
+        full-strength edge. Outlined at 50% opacity on no fill it was the one
+        thing on the page nobody could see. */}
+    <g>
+      <rect
+        x={X0 - 24} y="116" width="372" height="46" rx="4"
+        fill={INK.lost} fillOpacity=".12" stroke={INK.lost} strokeDasharray="6 4"
+      />
+      <circle cx={X0} cy="139" r="13" fill={INK.lost} />
+      <text x={X0} y="143" textAnchor="middle" fontSize="12" fontWeight="600" fill={INK.bg}>×</text>
+      <text x={X0 + 24} y="135" fontSize="12" fill={INK.fg}>Lost</text>
+      <text x={X0 + 24} y="150" fontSize="11" fill={INK.lostFg}>May be recorded at any point</text>
+    </g>
   </svg>
 );
 

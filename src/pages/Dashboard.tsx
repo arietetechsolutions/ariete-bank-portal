@@ -234,7 +234,7 @@ const Dashboard = () => {
                                   {/* A 3px flag, not a whole red row: visible when
                                       scanning, quiet when reading one record. */}
                                   <span className={cn('h-[22px] w-[3px] flex-none rounded-sm',
-                                    stalled ? 'bg-stall' : acc.status === 'Lost' ? 'bg-lost/50' : 'bg-transparent')} />
+                                    stalled ? 'bg-stall' : acc.status === 'Lost' ? 'bg-lost' : 'bg-transparent')} />
                                   <span className="truncate text-sm text-foreground">{acc.client_name || '—'}</span>
                                 </div>
                               </TableCell>
